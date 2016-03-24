@@ -1,0 +1,3 @@
+*.class
+*.gitignore~
+DistributedEC2Sorting/bin/*
