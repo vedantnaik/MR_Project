@@ -68,14 +68,15 @@ public class FileSystem {
 	public Reader getFileReader(String bucketName, String fileObjectKey) throws IOException{
 		
 		S3Object s3object = this.s3client.getObject(new GetObjectRequest(bucketName, fileObjectKey));
-		InputStream objectData = s3object.getObjectContent();
+		
+		InputStream gzipStream = new GZIPInputStream(s3object.getObjectContent());
+		Reader decoder = new InputStreamReader(gzipStream, "ASCII");
+		
+		
 		// Should work the same as:
 		// InputStream gzipStream = new GZIPInputStream(new FileInputStream(this.fileName));
 		
 		
-		Reader decoder = new InputStreamReader(objectData, "ASCII");
-		
-		objectData.close();
 		s3object = null;
 		
 		return decoder;

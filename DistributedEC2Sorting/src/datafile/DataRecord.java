@@ -1,5 +1,6 @@
 package datafile;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -55,6 +56,15 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 			FileSystem myFs = new FileSystem();
 			
 			Reader decoder = myFs.getFileReader(bucketName, this.fileName);
+			
+			
+//			BufferedReader buffered = new BufferedReader(decoder);
+//			String fileLine;
+//			while((fileLine = buffered.readLine())!=null){
+//				System.out.println(" \t\t: " + fileLine);
+//			}
+			
+			
 			
 			char[] cbuf = new char[1000];	
 			decoder.skip(this.fromChar);
