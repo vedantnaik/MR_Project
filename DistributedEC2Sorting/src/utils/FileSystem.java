@@ -1,16 +1,95 @@
 package utils;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
+
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 
 public class FileSystem {
 	double summation = 0.0;
 	int PARTS;
+	
+	// S3
+	AWSCredentials credentials;
+	AmazonS3 s3client;
+	
 	public FileSystem() {
-		// noop
+		
+		this.credentials = new ProfileCredentialsProvider().getCredentials();
+		this.s3client = new AmazonS3Client(credentials);
+		
 	}
+	
+	/*
+	 * Get list of all buckets:
+	  	for (Bucket bucket : s3client.listBuckets()) {
+			System.out.println(" - " + bucket.getName());
+		}
+	 * 
+	 * Create Bucket:
+	 	String bucketName = "javatutorial-net-example-bucket";
+		s3client.createBucket(bucketName);
+	 * 
+	 * For more snippets: https://javatutorial.net/java-s3-example
+	 * */
+	
+	
+	
+	
+	/****************************************************************
+	 * 
+	 * 						AMAZON (S3) FILE SYSTEM
+	 * 
+	 ****************************************************************/
+	
+	/**
+	 * returns a Reader class, pointing to beginning of file 
+	 * 			for to a given file in the given s3 bucket
+	 * @param dir a string directory location 
+	 * @return returns List<File> underneath that location/dir
+	 * @throws IOException 
+	 * @throws Exception
+	 * */
+	
+	public Reader getFileReader(String bucketName, String fileObjectKey) throws IOException{
+		
+		S3Object s3object = this.s3client.getObject(new GetObjectRequest(bucketName, fileObjectKey));
+		InputStream objectData = s3object.getObjectContent();
+		// Should work the same as:
+		// InputStream gzipStream = new GZIPInputStream(new FileInputStream(this.fileName));
+		
+		
+		Reader decoder = new InputStreamReader(objectData, "ASCII");
+		
+		objectData.close();
+		s3object = null;
+		
+		return decoder;
+	}
+	
+	
+	
+	
+	
+	/****************************************************************
+	 * 
+	 * 						LOCAL FILE SYSTEM
+	 * 
+	 ****************************************************************/
 	
 	/**
 	 * returns the List<File> given a directory location

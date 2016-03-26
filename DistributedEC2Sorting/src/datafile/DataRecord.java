@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.Serializable;
 import java.util.zip.GZIPInputStream;
+
+import utils.FileSystem;
 
 /*
  * We plan to identify each data entry as a record using the following:
@@ -17,7 +20,7 @@ import java.util.zip.GZIPInputStream;
  * */
 
 
-public class DataRecord {
+public class DataRecord implements Serializable, Comparable<DataRecord>{
 
 	private String fileName;
 	private long fromChar;
@@ -42,22 +45,25 @@ public class DataRecord {
 
 	// DataRecord Methods
 	
-	public String readRecord(){
+	/*
+	 * Read the complete record from the file system and return as a string..
+	 * */
+	public String readRecord(String bucketName){
 		String lineToRead="";
 
 		try {
-			InputStream gzipStream = new GZIPInputStream(new FileInputStream(this.fileName));
-			Reader decoder = new InputStreamReader(gzipStream, "ASCII");
+			FileSystem myFs = new FileSystem();
+			
+			Reader decoder = myFs.getFileReader(bucketName, this.fileName);
 			
 			char[] cbuf = new char[1000];	
 			decoder.skip(this.fromChar);
 			decoder.read(cbuf, 0, this.recordLength);
 			lineToRead = new String(cbuf);
 			
-			cbuf = null;
-			
+			cbuf = null;			
 			decoder.close();
-			gzipStream.close();
+			
 		} catch (FileNotFoundException e) {
 			System.err.println("Unable to locate file " + this.fileName);
 			e.printStackTrace();
@@ -70,6 +76,11 @@ public class DataRecord {
 	}
 
 	
+	@Override
+	public int compareTo(DataRecord o) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 	
 	// GETTERS AND SETTERS
 	
