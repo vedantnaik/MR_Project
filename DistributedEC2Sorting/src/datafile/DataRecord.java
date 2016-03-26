@@ -78,7 +78,8 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	
 	@Override
 	public int compareTo(DataRecord o) {
-		// TODO Auto-generated method stub
+		if(this.sortValue > o.getSortValue()) {return 1;}
+		if(this.sortValue < o.getSortValue()) {return -1;}
 		return 0;
 	}
 	
