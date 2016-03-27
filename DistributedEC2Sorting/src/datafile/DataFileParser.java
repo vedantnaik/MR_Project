@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 public class DataFileParser {
 
-	class Field{
+	public class Field{
 		public static final String DRY_BULB_TEMP = "DryBulbTemp";
 	}
 	
@@ -19,6 +19,10 @@ public class DataFileParser {
 	
 	// TODO: add sanity checks
 	public static boolean isRecordValid(String[] fields){
+		if(fields.length != 21){
+			return false;
+		}
+		
 		if(null == DataFileParser.getValueOf(fields, Field.DRY_BULB_TEMP)){
 			return false;
 		}
