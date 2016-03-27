@@ -11,6 +11,7 @@ import java.io.Serializable;
 import java.util.zip.GZIPInputStream;
 
 import utils.FileSystem;
+import utils.S3FileReader;
 
 /*
  * We plan to identify each data entry as a record using the following:
@@ -29,7 +30,6 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	private double sortValue;
 	
 	// CONSTRUCTORS
-	
 	public DataRecord(String fileName, long fromChar, int recordLength) {
 		this.fileName = fileName;
 		this.fromChar = fromChar;
@@ -37,7 +37,6 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	}
 	
 	public DataRecord(String fileName, long fromChar, int recordLength, double sortValue) {
-		super();
 		this.fileName = fileName;
 		this.fromChar = fromChar;
 		this.recordLength = recordLength;
@@ -53,18 +52,9 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 		String lineToRead="";
 
 		try {
-			FileSystem myFs = new FileSystem();
+			S3FileReader myFs = new S3FileReader(bucketName, this.fileName);
 			
-			Reader decoder = myFs.getFileReader(bucketName, this.fileName);
-			
-			
-//			BufferedReader buffered = new BufferedReader(decoder);
-//			String fileLine;
-//			while((fileLine = buffered.readLine())!=null){
-//				System.out.println(" \t\t: " + fileLine);
-//			}
-			
-			
+			Reader decoder = myFs.getS3FileReader();
 			
 			char[] cbuf = new char[1000];	
 			decoder.skip(this.fromChar);
@@ -85,6 +75,13 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 		return lineToRead;
 	}
 
+	
+	/*
+	 * Read the complete record from the file system and return as a string..
+	 * */
+	public String readRecordFrom(S3FileReader s3fr) throws IOException{
+		return s3fr.readFromOffsetToLen(this.fromChar, this.recordLength);
+	}
 	
 	@Override
 	public int compareTo(DataRecord o) {
