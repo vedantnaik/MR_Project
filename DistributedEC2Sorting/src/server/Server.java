@@ -74,7 +74,7 @@ public class Server implements Runnable {
 		lock = new Object();
 		serverNumber = Integer.parseInt(args[0]);
 		int port = ports[serverNumber];
-		System.out.println("Started Server ..." + serverNumber + " at " + port);
+		System.out.println("Started Server " + serverNumber + " @ " + port);
 		try {
 			serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
@@ -288,37 +288,31 @@ public class Server implements Runnable {
 					+ "globalpivot end" + globalPivots);
 			synchronized(this){
 			serversReplied++;
-
-			List<Integer> copyOfglobalPivots = new ArrayList<>(
-					globalPivots);
-
-			int prevIndex = 0, index = 0;
-			
-			for(Integer i : myInts){
-				copyOfglobalPivots.add(new Integer(i.intValue()));
-			}
-
-			
-			Collections.sort(copyOfglobalPivots);
-			System.out.println("copyOfglobalPivots " + copyOfglobalPivots);
-			System.out.println("myInts " + myInts);
-			System.out.println("globalPivots " + globalPivots);
-			int count = 0;
+				
+			int count = 0, counterPivot = 0;
 			List<List<Integer>> integersToBeSent = new ArrayList<>();
-			for (Integer i : globalPivots) {
-				index = copyOfglobalPivots.lastIndexOf(i);
-				 System.out.println("indexes " + prevIndex + " " + index);
-				 System.out.println("sublists " + myInts.subList(prevIndex , index - count));
-				integersToBeSent.add(myInts.subList(prevIndex, index
-						- count));
-				count++;
-				prevIndex = index - count + 1;
+			
+			for(int i = 0; i < globalPivots.size() + 1; i++){
+				integersToBeSent.add(i, new ArrayList<Integer>());
 			}
-			integersToBeSent.add(myInts.subList(prevIndex,
-					myInts.size()));
+			
+			for (Integer i : myInts) {
+
+				if (counterPivot == globalPivots.size()) {
+					integersToBeSent.get(count).add(new Integer(i));
+				} else if (globalPivots.get(counterPivot) > i
+						|| globalPivots.get(counterPivot) == i) {
+					integersToBeSent.get(count).add(new Integer(i));
+				} else {
+					counterPivot++;
+					count++;
+					integersToBeSent.get(count).add(new Integer(i));
+				}
+				
+			}
 			
 			
-			System.out.println("Every Processors Partitions: "
+			System.out.println("Every Processors Partitions=> "
 					+ integersToBeSent);
 
 			int serverNumb = serverNumber;
@@ -356,7 +350,7 @@ public class Server implements Runnable {
 			serversReplied = 0;
 			globalPivotON = false;
 			}
-//			}
+
 		}
 	}
 	

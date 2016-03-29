@@ -59,7 +59,7 @@ public class Client {
 		int j = 0;
 		List<List<Integer>> contentsList = new ArrayList<>();
 		for (int i = 0; i < ports.length; i++) {
-			contentsList.add(i, new ArrayList<>());
+			contentsList.add(i, new ArrayList<Integer>());
 			String temp = "";
 			for (; j < (((i + 1) * (contentsArray.length)) / ports.length); j++) {
 				temp += contentsArray[j] + ",";
@@ -182,7 +182,11 @@ public class Client {
 
 			if (line.equals("1")) {
 				System.out.print("Enter filename (from current directory) : ");
-				String fileName = "test_sort.txt"; 
+				String fileName = "C:\\Users\\Dixit_Patel\\Google Drive\\"
+						+ "Working on a dream\\StartStudying\\sem4\\MapReduce\\"
+						+ "homeworks\\hw8-Distributed Sorting\\MR_Project\\"
+						+ "DistributedEC2Sorting\\test_sort.txt"; 
+				System.out.println("filename " + fileName);
 				client.callSorter(fileName, serverIP);
 
 			} else if (line.equals("9")) {
