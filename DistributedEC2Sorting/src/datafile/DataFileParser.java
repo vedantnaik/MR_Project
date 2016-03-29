@@ -29,6 +29,13 @@ public class DataFileParser {
 		if(DataFileParser.getValueOf(fields, Field.DRY_BULB_TEMP).equalsIgnoreCase("")){
 			return false;
 		}
+		
+		try {
+			Double.parseDouble(DataFileParser.getValueOf(fields, Field.DRY_BULB_TEMP));
+		} catch(NumberFormatException e) {
+			return false;
+		}
+		
 		return true;
 	}
 	
