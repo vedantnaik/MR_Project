@@ -1,0 +1,51 @@
+Dixit_Patel@Dixit-HP MINGW64 ~/Google Drive/Working on a dream/StartStudying/sem4/MapReduce/homeworks/hw8-Distributed Sorting/MR_Project/DistributedEC2Sorting/bin (master)
+$ java server.Server 1
+Started Server ...1 at 1211
+New connection Startin ...
+New connection Startin ...
+received sort#34,23,19,18,11,7,21,13,8,35,12,29,
+New connection Startin ...
+STAGE 1
+New connection Startin ...
+Sorted [7, 8, 11, 12, 13, 18, 19, 21, 23, 29, 34, 35]
+replied done# to all servers
+received distribute#All
+STAGE 2 : Selecting my pivots
+my pivots are[7, 13, 23]
+sending distributePivot#
+
+distributed from serverNumber: 1
+received globalpivot#start
+STAGE 4: Receive Global Pivots
+received 10
+adding here [10]
+received 22
+adding here [10, 22]
+received globalpivot#end
+globalpivot end[10, 22]
+copyOfglobalPivots [7, 8, 10, 11, 12, 13, 18, 19, 21, 22, 23, 29, 34, 35]
+myInts [7, 8, 11, 12, 13, 18, 19, 21, 23, 29, 34, 35]
+globalPivots [10, 22]
+indexes 0 2
+sublists [7, 8]
+indexes 2 9
+sublists [11, 12, 13, 18, 19, 21]
+Every Processors Partitions: [[7, 8], [11, 12, 13, 18, 19, 21], [23, 29, 34, 35]]
+Sending Partition from Server1 to Server2 23, 29, 34, 35
+Sending Partition from Server1 to Server0 7, 8
+
+received mypart#start
+STAGE 5: receiving my partitions
+received 16
+received 17
+received mypart#end
+mypart_serversReplied 1 mypartInts []
+received mypart#start
+STAGE 5: receiving my partitions
+received 14
+received 15
+received 20
+received 22
+received mypart#end
+mypart_serversReplied 2 mypartInts []
+Global Sorted Partition: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
