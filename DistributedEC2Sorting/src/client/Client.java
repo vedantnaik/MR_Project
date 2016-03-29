@@ -6,7 +6,9 @@ import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * A sample client which connects to the server and can issue a sorting command
@@ -55,16 +57,20 @@ public class Client {
 		}
 		contentsArray = contents.split(",");
 		int j = 0;
+		List<List<Integer>> contentsList = new ArrayList<>();
 		for (int i = 0; i < ports.length; i++) {
+			contentsList.add(i, new ArrayList<>());
 			String temp = "";
 			for (; j < (((i + 1) * (contentsArray.length)) / ports.length); j++) {
 				temp += contentsArray[j] + ",";
 			}
 			contentsA[i] = temp;
+			for(String sl : temp.split(","))
+				contentsList.get(i).add(Integer.valueOf(sl));
 		}
 		
 		for (int i = 0; i < ports.length; i++)
-			System.out.println(" contents Array " + contentsA[i]);
+			System.out.println(" contents Array " + contentsList.get(i));
 
 		try {
 
@@ -75,10 +81,14 @@ public class Client {
 						sendingSocket[i].getOutputStream());
 				inFromServer[i] = new BufferedReader(new InputStreamReader(
 						sendingSocket[i].getInputStream()));
-
-				out[i].writeBytes("sort#" + contentsA[i] + "\n");
-
-				System.out.println("Running job on Server ...");
+				
+				out[i].writeBytes("sort#start\n");
+				
+				for(int y = 0; y < contentsList.get(i).size(); y++)
+					out[i].writeBytes(contentsList.get(i).get(y)+"\n");
+				
+				out[i].writeBytes("sort#end\n");
+				System.out.println("Running job on Server ..." + i);
 
 			}
 
