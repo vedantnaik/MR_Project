@@ -36,6 +36,7 @@ public class Server implements Runnable {
 	private static boolean distributePivotON = false;
 	private static boolean globalPivotON = false;
 	private static boolean mypartON = false;
+	static Object lock;
 	// for now
 	private String serverIP = "127.0.0.1";
 
@@ -69,7 +70,7 @@ public class Server implements Runnable {
 			System.out.println("Usage: Server <servernumber>");
 			System.exit(0);
 		}
-
+		lock = new Object();
 		serverNumber = Integer.parseInt(args[0]);
 		int port = ports[serverNumber];
 		System.out.println("Started Server ..." + serverNumber + " at " + port);
@@ -104,7 +105,7 @@ public class Server implements Runnable {
 			while (true) {
 //				System.out.println("Waiting for read");
 				String received = inFromClient.readLine();
-				synchronized(this){
+				synchronized(lock) {
 				System.out.println("received " + received);
 				String[] receivedResult = {"",""};
 				if(received.contains("#")){
@@ -120,49 +121,36 @@ public class Server implements Runnable {
 					System.out.println("STAGE 1");
 
 					String[] numStr = receivedResult[1].split(",");
-//					int[] num = new int[numStr.length];
+
 					for (int i = 0; i < numStr.length; i++) {
-//						num[i] = Integer.valueOf(numStr[i]);
 						myInts.add(Integer.valueOf(numStr[i]));
 					}
 
-					// sorting the numbers
-//					Arrays.sort(num);
-					// adding sync here .. added in void run as well 
+				
+					// keeping own copy of numbers as List
+					Collections.sort(myInts);
 					
-						// keeping own copy of numbers as List
-						Collections.sort(myInts);
-					
-//					sortedString = "";
-//					for (int i = 0; i < num.length; i++) {
-//						Thread.sleep(500);
-//						sortedString = sortedString + num[i] + ",";
-//					}
-
-//					System.out.println("Sorted " + sortedString);
 					System.out.println("Sorted " + myInts);
 
-					// some persistence required here
-//					globalString = sortedString;
+
 
 					out.writeBytes("done#\n");
 					System.out.println("replied done# to all servers");
-//					System.out.println("my local Sorted Array " + myInts);
+
 				} else if (receivedResult[0].equals("distribute")) {
+					
 					// select pivots
 					System.out.println("STAGE 2 : Selecting my pivots");
 					String piv = "";
 					List<Integer> pivArray = new ArrayList<>();
-//					String[] globalSplitArray = globalString.split(",");
+
 					
 					for (int i = 0; i < myInts.size() ; i += p) {
-//						piv = piv + globalSplitArray[i] + ",";
 						pivArray.add(myInts.get(i));
 					}
 					
 					System.out.println("my pivots are" + pivArray);
 					mypivsArray.addAll(pivArray);
-//					mypivs = piv;
 
 					// send only to server 0
 					if (serverNumber != 0) {
@@ -180,7 +168,7 @@ public class Server implements Runnable {
 				} else if (receivedResult[0].equals("distributePivot")) {
 					System.out.println("STAGE 3: Receive Distributed Pivots");
 					if (serverNumber == 0 && receivedResult[1].equalsIgnoreCase("start")) {
-//						serverPivs += receivedResult[1];
+
 						System.out.println("Received pivots start");
 						distributePivotON = true;	
 						
@@ -193,19 +181,14 @@ public class Server implements Runnable {
 					if (serversReplied == ports.length - 1) {
 						// adding my own pivs
 
-//						serverPivs = mypivs + serverPivs;
 						serverPivsArray.addAll(mypivsArray);
-//						String[] numStr = serverPivs.split(",");
-//						int[] num = new int[numStr.length];
-//						for (int i = 0; i < numStr.length; i++)
-//							num[i] = Integer.valueOf(numStr[i]);
 
 						Collections.sort(serverPivsArray);
 
 						System.out.println("All Sorted Pivots "	+  serverPivsArray);
 
 						System.out.println("Selecting global pivots");
-//						String piv = "";
+
 						List<Integer> pivArray = new ArrayList<>();
 
 						for (int i = (p - 1); i < serverPivsArray.size(); i += (p - 1)) {
@@ -242,7 +225,7 @@ public class Server implements Runnable {
 						System.out.println("globalpivot end" + globalPivots);
 						synchronized(this){
 						serversReplied++;
-//						if(serversReplied == 1){
+
 						List<Integer> copyOfglobalPivots = new ArrayList<>(
 								globalPivots);
 	
@@ -251,7 +234,7 @@ public class Server implements Runnable {
 						for(Integer i : myInts){
 							copyOfglobalPivots.add(new Integer(i.intValue()));
 						}
-//						copyOfglobalPivots.addAll(myInts);
+
 						
 						Collections.sort(copyOfglobalPivots);
 						System.out.println("copyOfglobalPivots " + copyOfglobalPivots);
@@ -316,11 +299,9 @@ public class Server implements Runnable {
 						for(Integer i : mypartInts){
 							myInts2.add(new Integer(i.intValue()));
 						}
-//						myInts2.addAll(mypartInts);
 						mypartInts = new ArrayList<>();
 						System.out.println("mypart_serversReplied " + mypart_serversReplied + " mypartInts " + mypartInts);
 	
-//						serversReplied++;
 						if (mypart_serversReplied == ports.length - 1) {
 							Collections.sort(myInts2);
 							System.out.println("Global Sorted Partition: " + myInts2);
