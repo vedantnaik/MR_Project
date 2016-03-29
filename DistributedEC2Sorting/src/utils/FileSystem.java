@@ -56,7 +56,7 @@ public class FileSystem {
 			int offset = header.length() + 1;
 			
 			// TODO: remove count condition to read all file
-			while((fileLine = buffered.readLine())!=null && count < 10){
+			while((fileLine = buffered.readLine())!=null /*&& count < 10*/){
 				
 				// TODO: read line > csv > get offsets > get value > make DataRecord and return list
 
@@ -73,11 +73,9 @@ public class FileSystem {
 					double dryBulbTemp = Double.parseDouble(DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP));
 					
 					dataRecordList.add(new DataRecord(fileObjectKey, offset, fileLine.length(), dryBulbTemp));
-					
-					offset = offset + fileLine.length() + 1;
-					count++;
 				}
-				
+				offset = offset + fileLine.length() + 1;
+				count++;
 			}
 			
 		} catch (IOException e) {
