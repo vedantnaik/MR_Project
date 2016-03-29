@@ -55,6 +55,7 @@ public class FileSystem {
 			
 			int offset = header.length() + 1;
 			
+			// TODO: remove count condition to read all file
 			while((fileLine = buffered.readLine())!=null && count < 10){
 				
 				// TODO: read line > csv > get offsets > get value > make DataRecord and return list
