@@ -12,7 +12,7 @@ FILE=publicDnsFile.txt
 # lines in the file that we are reading from
 # IMPORTANT: We will be runnning the java program on each instance, so we dont wait for one program to
 # complete and exit
-comds="cd ~/test/; javac Hello.java; java Hello"
+comds="cd ~/test/; javac Hello.java; time java Hello"
 i=0
 server="not decided"
 while read line;do

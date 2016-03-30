@@ -10,8 +10,8 @@ nodeCount=$1
 echo "we are starting "
 echo $nodeCount
 echo "nodes"
-aws ec2 run-instances --image-id ami-663a6e0c --count $nodeCount --instance-type m3.large --key-name MyKeyPair --security-groups my-sg
-instance_ids=`aws ec2 describe-instances --filters "Name=instance-type,Values=m3.large" | jq -r ".Reservations[].Instances[].PublicDnsName"`
+aws ec2 run-instances --image-id ami-663a6e0c --count $nodeCount --instance-type m3.medium --key-name MyKeyPair --security-groups my-sg
+instance_ids=`aws ec2 describe-instances --filters "Name=instance-type,Values=m3.medium" | jq -r ".Reservations[].Instances[].PublicDnsName"`
 instance_idArray=($instance_ids)
 
 #this command will give 'pending' or 'running'
@@ -25,7 +25,7 @@ host="ubuntu@"${instance_idArray[0]}
 
 # the list of commands that install Java on the instance and sets up the environment
 # The java version that we are installing is 1.7
-comds="sudo add-apt-repository -y ppa:webupd8team/java; sudo apt-get update; yes | sudo apt-get install -y oracle-java7-installer; sudo apt-get install oracle-java7-set-default; which java; mkdir ~/.aws; mkdir ~/test"
+comds="sudo add-apt-repository -y ppa:webupd8team/java; sudo apt-get update; yes | sudo apt-get install -y oracle-java7-installer; sudo apt-get install oracle-java7-set-default; which java; mkdir ~/.aws; mkdir ~/test; mkdir ~/Project; mkdir ~/Project/sampleSortMyParts; mkdir ~/Project/credentials; ls ~/; ls ~/Project"
 comds2="ls"
 
 # for each instance that is created, we will:
@@ -76,7 +76,7 @@ do
 	echo "trying to log the ssh return code..."
 	echo $?
 	echo "transferring the jar file to the linux instance"
-	scp -i /Users/rohanjoshi/Documents/MyKeyPair.pem -o stricthostkeychecking=no review.txt ubuntu@${instance_idArray[i]}:~/.aws
+	scp -i /Users/rohanjoshi/Documents/MyKeyPair.pem -o stricthostkeychecking=no MyKeyPair.pem ubuntu@${instance_idArray[i]}:~/Project/credentials
 	scp -i /Users/rohanjoshi/Documents/MyKeyPair.pem -o stricthostkeychecking=no Hello.java ubuntu@${instance_idArray[i]}:~/test
 	echo "writing the ip to a file"
 	ip=`aws ec2 describe-instances --filters "Name=dns-name,Values=${instance_idArray[i]}" | jq -r ".Reservations[].Instances[].PublicIpAddress"`
