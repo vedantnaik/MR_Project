@@ -13,6 +13,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import datafile.DataRecord;
+import utils.FileSystem;
+import utils.S3FileReader;
+
 /**
  * Server program which listens on the port requested or passed in the URL.
  * Contains two functions, sort and kill(itself)
@@ -28,9 +32,12 @@ public class Server implements Runnable {
 	private static int serversReplied = 0;
 	private static int mypart_serversReplied = 0;
 
+	private static List<DataRecord> dataRecordPivotsList = new ArrayList<DataRecord>();
+	
+	
 	private static List<Integer> mypivsArray = new ArrayList<>();
 	private static List<Integer> serverPivsArray = new ArrayList<>();
-	private static List<Integer> globalPivots = new ArrayList<>();
+	private static List<Inteotger> globalPivots = new ArrayList<>();
 	private static List<Integer> mypartInts = new ArrayList<>();
 	
 	private static boolean distributePivotON = false;
@@ -46,6 +53,17 @@ public class Server implements Runnable {
 
 	private static List<Integer> myInts = new ArrayList<>();
 	private static List<Integer> myInts2 = new ArrayList<>();
+	
+	
+	
+	///// DataRecord sort from s3
+	
+	private static String bucketName;
+	private static List<String> fileNameList = new ArrayList<String>();
+	
+	private static List<DataRecord> serverDataRecords = new ArrayList<DataRecord>();
+	
+	/////
 	
 
 	public Server(Socket newConnection) throws UnknownHostException,
@@ -68,9 +86,15 @@ public class Server implements Runnable {
 	public static void main(String args[]) throws Exception {
 		if (args.length != 1) {
 			System.out.println("Syntax error: Include my Number");
-			System.out.println("Usage: Server <servernumber>");
+			System.out.println("Usage: Server <servernumber> <BucketName>");
 			System.exit(0);
 		}
+		
+		
+		bucketName = args[1];
+		
+		
+		
 		lock = new Object();
 		serverNumber = Integer.parseInt(args[0]);
 		int port = ports[serverNumber];
@@ -167,7 +191,12 @@ public class Server implements Runnable {
 						System.exit(0);
 					} else {
 						if(receivingMyPartitionON){
-							myInts.add(new Integer(receivedResult[0]));
+							
+							// add received filename to list
+							fileNameList.add(receivedResult[0]);
+							
+							
+//							myInts.add(new Integer(receivedResult[0]));
 						}
 						else if (distributePivotON) {
 							serverPivsArray.add(new Integer(receivedResult[0]));
@@ -189,32 +218,40 @@ public class Server implements Runnable {
 	
 	private void stage1_sort_my_partition() {
 		
-		// sorting my list
-		Collections.sort(myInts);
+		// TODO: later make this in threads
 
-		System.out.println("Sorted " + myInts);
-		
+		for (String fileName : fileNameList){
+			try {
+				S3FileReader s3fr = new S3FileReader(bucketName, fileName);
+				serverDataRecords.addAll(FileSystem.readRecordsFrom(bucketName, fileName));
+				
+			} catch (IOException e) {
+				System.err.println("SERVER : Stage 1 Sorting : unable to read file");
+				e.printStackTrace();
+			}
+		}
+		Collections.sort(serverDataRecords);
 	}
 
 	private void stage2_select_my_pivots() throws IOException {
 		
 		String piv = "";
-		List<Integer> pivArray = new ArrayList<>();
+		List<DataRecord> pivArray = new ArrayList<DataRecord>();
 
 		
-		for (int i = 0; i < myInts.size() ; i += p) {
-			pivArray.add(myInts.get(i));
+		for (int i = 0; i < serverDataRecords.size() ; i += p) {
+			pivArray.add(new DataRecord(serverDataRecords.get(i)));
 		}
 		
-		System.out.println("my pivots are" + pivArray);
-		mypivsArray.addAll(pivArray);
+		System.out.println("my pivots are : " + pivArray);
+		dataRecordPivotsList.addAll(pivArray);
 
 		// send only to server 0
 		if (serverNumber != 0) {
 			System.out.println("sending distributePivot#" + piv + "\n");
 			outDist[0].writeBytes("distributePivot#start\n");
-			for(int i = 0; i < myInts.size() ; i += p){
-				outDist[0].writeBytes(myInts.get(i).toString() + "\n");
+			for(int i = 0; i < serverDataRecords.size() ; i += p){
+				outDist[0].writeBytes(serverDataRecords.get(i).toString() + "\n");
 			}
 			outDist[0].writeBytes("distributePivot#end\n");
 			System.out.println("distributed from serverNumber: "

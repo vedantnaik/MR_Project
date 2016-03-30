@@ -59,7 +59,7 @@ public class Client {
 		int j = 0;
 		List<List<Integer>> contentsList = new ArrayList<>();
 		for (int i = 0; i < ports.length; i++) {
-			contentsList.add(i, new ArrayList<>());
+			contentsList.add(i, new ArrayList<Integer>());
 			String temp = "";
 			for (; j < (((i + 1) * (contentsArray.length)) / ports.length); j++) {
 				temp += contentsArray[j] + ",";

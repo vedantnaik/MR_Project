@@ -9,6 +9,8 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -19,7 +21,9 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 import datafile.DataFileParser;
 import datafile.DataRecord;
@@ -27,6 +31,30 @@ import datafile.DataRecord;
 public class FileSystem {
 	double summation = 0.0;
 	int PARTS;
+	
+	String bucketName;
+	String fileObjectKey;
+	ArrayList<String> fileNameSizeList;
+	
+	
+	public FileSystem(String bucketName){
+		this.bucketName = bucketName;
+		
+		this.fileNameSizeList = new ArrayList<String>();
+		
+		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+		AmazonS3 s3client = new AmazonS3Client(credentials);
+		ObjectListing objList = s3client.listObjects("cs6240sp16");
+		
+		for(S3ObjectSummary objSum : objList.getObjectSummaries() ){
+			if(objSum.getKey().contains("climate") && objSum.getKey().contains("txt.gz")){
+				this.fileNameSizeList.add(objSum.getKey() + ":" + objSum.getSize());
+			}
+		}
+		
+	}
+	
+	
 	
 	/****************************************************************
 	 * 
@@ -87,93 +115,34 @@ public class FileSystem {
 		return dataRecordList;
 	}
 	
-	
-	
-	
-	
-	/****************************************************************
-	 * 
-	 * 						LOCAL FILE SYSTEM
-	 * 
-	 ****************************************************************/
-	
-	/**
-	 * returns the List<File> given a directory location
-	 * @param dir a string directory location 
-	 * @return returns List<File> underneath that location/dir
-	 * @throws Exception
-	 */
-	public List<FileType> getFiles(String dir) throws Exception {
-		summation = 0.0;
-		List<FileType> list = new ArrayList<>();
-		addFile(new FileType(new File(dir)), list);
-		return list;
-	}
-	/**
-	 * recursive helper function for getFiles function
-	 * to read the files beneath folder of folder.
-	 * @param fileVar is the file a directory? if yes read more 
-	 * and add to the list arg as argument
-	 * @param list the list arg as argument
-	 */
-	private void addFile(FileType fileVar, List<FileType> list) {
-		if (fileVar.file.isDirectory()) {
-			String[] subNodes = fileVar.file.list();
-			for (String subNode : subNodes) {
-				addFile(new FileType(fileVar.file, subNode), list);
+	public HashMap<Integer, ArrayList<String>> getS3Parts(int parts){
+		
+		Collections.sort(this.fileNameSizeList, new Comparator<String>() {
+			@Override
+			public int compare(String o1, String o2) {
+				int val1 = Integer.parseInt(o1.split(":")[1]);
+				int val2 = Integer.parseInt(o2.split(":")[1]);
+				if(val1 > val2) {return 1;}
+				if(val1 < val2) {return -1;}
+				return 0;
 			}
-		} else {
-			list.add(fileVar);
-			summation += fileVar.size;
-		}
-	}
+		});
+		
+		HashMap<Integer, ArrayList<String>> partitionMap = new HashMap<Integer, ArrayList<String>>(); 
 	
-	/**
-	 * mega function to read files and call makePartition to make partitions
-	 * of the data 
-	 * @param the location of files to read from
-	 * @param number the of partitions to part files into  
-	 * @return List of List of partitions of equal size
-	 * @throws Exception
-	 */
-	private List<List<FileType>> readFilesGetPartition(String location, int number) throws Exception {
-		PARTS = number + 1;
-		List<FileType> sortedFiles = getFiles(location);
-		Collections.sort(sortedFiles);
-		List<List<FileType>> partitions = makePartition(sortedFiles, PARTS);
-		return partitions;
+		int spinner = 0;
+		for (String fileNameSize : fileNameSizeList){
+			if(spinner == parts) {spinner = 0;}
+			
+			if(!partitionMap.containsKey(spinner)){
+				partitionMap.put(spinner, new ArrayList<String>());
+			}
+			partitionMap.get(spinner).add(fileNameSize.split(":")[0].trim());
+			
+			spinner++;
+		}
+		
+		return partitionMap;
 	}
 
-	/**
-	 * makes partition in number of numberOfParts based on size
-	 * so each partition has almost equal size 
-	 * @param sortedFiles files in sorted order
-	 * @param numberOfParts number of parts in which all files are needed
-	 * @return List of List of partitions of equal size
-	 */
-	private List<List<FileType>> makePartition(List<FileType> sortedFiles,
-			int numberOfParts) {
-		double eachPartSize = summation/numberOfParts;
-		double eachPartSummation = 0.0;
-		List<List<FileType>> partitions = new ArrayList<>();
-		List<FileType> current = new ArrayList<>();
-		for(FileType f : sortedFiles){			
-			if(eachPartSummation >= eachPartSize){
-				System.out.println("size " + eachPartSummation);
-				eachPartSummation =  0.0;
-				partitions.add(current);
-				current = new ArrayList<>();
-			}
-			eachPartSummation += f.size;
-			current.add(f);
-		}
-		return partitions;
-	}
-
-//	public static void main(String[] args) throws Exception {
-//		FileSystem fs = new FileSystem();
-//		System.out.println("files: " + fs.getFiles("X://climate//"));
-//		System.out.println("summation: " + fs.summation);
-//		System.out.println("sets: " + fs.readFilesGetPartition("X://climate//", 8));
-//	}
 }

@@ -42,6 +42,13 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 		this.recordLength = recordLength;
 		this.sortValue = sortValue;
 	}
+	
+	public DataRecord(DataRecord copyFrom) {
+		this.fileName = copyFrom.getFileName();
+		this.fromChar = copyFrom.getFromChar();
+		this.recordLength = copyFrom.getRecordLength();
+		this.sortValue = copyFrom.getSortValue();
+	}
 
 	// DataRecord Methods
 	
