@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -36,8 +37,9 @@ public class Client {
 	 *            the server ip of the server eg. 127.0.0.1
 	 * @param serverPort
 	 *            the server port eg. 1212
+	 * @throws IOException 
 	 */
-	public void callSorter(String fileName, String serverIP) {
+	public void callSorter(String fileName, String serverIP) throws IOException {
 		
 		FileSystem myS3FS = new FileSystem("cs6240sp16");
 		

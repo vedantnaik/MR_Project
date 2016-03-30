@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
+
 import datafile.DataRecord;
 import utils.FileSystem;
 import utils.S3FileReader;
@@ -69,6 +72,10 @@ public class Server implements Runnable {
 	private static List<DataRecord> serverDataRecords = new ArrayList<DataRecord>();
 	private static List<DataRecord> serverDataRecordsCache = new ArrayList<DataRecord>();
 	
+	///// File system
+	
+	static FileSystem MRFS;
+	
 	/////
 	
 
@@ -99,7 +106,7 @@ public class Server implements Runnable {
 		
 		bucketName = args[1];
 		
-		
+		MRFS = new FileSystem(bucketName);
 		
 		lock = new Object();
 		serverNumber = Integer.parseInt(args[0]);
@@ -232,7 +239,7 @@ public class Server implements Runnable {
 		for (String fileName : fileNameList){
 			try {
 				S3FileReader s3fr = new S3FileReader(bucketName, fileName);
-				serverDataRecords.addAll(FileSystem.readRecordsFrom(bucketName, fileName));
+				serverDataRecords.addAll(MRFS.readRecordsFrom(bucketName, fileName));
 				
 			} catch (IOException e) {
 				System.err.println("SERVER : Stage 1 Sorting : unable to read file");
@@ -384,11 +391,18 @@ public class Server implements Runnable {
 				outDist[(serverNumber + i) % 3].writeBytes("mypart#start\n");
 				
 				int sendToServerNumber = (serverNumber + i) % 3;
-				FileSystem.writeToEC2(drsToBeSent.get(sendToServerNumber), sendToServerNumber, serverNumber);
-				
+				try {
+					MRFS.writeToEC2(drsToBeSent.get(sendToServerNumber), sendToServerNumber, serverNumber);
+				} catch (JSchException | SftpException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+								
 				outDist[(serverNumber + i) % 3].writeBytes("mypart#end\n");
-				
 			}
+			
+			
+			
 			System.out.println();
 			
 			for(DataRecord i : drsToBeSent.get(serverNumber)){
@@ -425,23 +439,30 @@ public class Server implements Runnable {
 			
 			if (mypart_serversReplied == ports.length - 1) {
 
+// TODO:
 				
-				for (int ser = 0; ser < 3; ser++){
-					File folderIn = new File(serverNumber+"/");
-					
-					for(File partFile : folderIn.listFiles()){
-						if(partFile.getName().contains("p"+serverNumber)){
-							System.out.println("Server "+serverNumber + " reading at " + partFile.getName());
-							FileInputStream fileStream = new FileInputStream(folderIn+"/"+partFile.getName());
-							ObjectInputStream ois = new ObjectInputStream(fileStream);
-							
-							ArrayList<DataRecord> readList = (ArrayList<DataRecord>) ois.readObject();
-							System.out.println("read list " + readList + "");
-							// TODO: MAKE MERGER
-							serverDataRecordsCache.addAll(readList);
-						}
-					}
-				}
+				
+				// read my parts file
+				
+				serverDataRecordsCache.addAll(MRFS.readMyParts(serverNumber));
+				
+				
+//				for (int ser = 0; ser < ports.length; ser++){
+//					File folderIn = new File(ser+"/");
+//					
+//					for(File partFile : folderIn.listFiles()){
+//						if(partFile.getName().contains("p"+serverNumber)){
+//							System.out.println("Server "+serverNumber + " reading at " + partFile.getName());
+//							FileInputStream fileStream = new FileInputStream(folderIn+"/"+partFile.getName());
+//							ObjectInputStream ois = new ObjectInputStream(fileStream);
+//							
+//							ArrayList<DataRecord> readList = (ArrayList<DataRecord>) ois.readObject();
+//							System.out.println("read list " + readList + "");
+//							// TODO: MAKE MERGER
+//							serverDataRecordsCache.addAll(readList);
+//						}
+//					}
+//				}
 				
 				
 			

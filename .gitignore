@@ -1,5 +1,6 @@
 *.class
 *.gitignore~
+*.jar
 DistributedEC2Sorting/bin/*
 DistributedEC2Sorting/.project
 DistributedEC2Sorting/.classpath

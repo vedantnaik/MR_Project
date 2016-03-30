@@ -1,25 +1,24 @@
 package utils;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Reader;
-import java.io.Writer;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
-
-import org.apache.commons.csv.CSVParser;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
@@ -29,36 +28,55 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
 
 import datafile.DataFileParser;
 import datafile.DataRecord;
 
 public class FileSystem {
-	double summation = 0.0;
-	int PARTS;
+	
+	private class Constants {
+		private static final String PEM_FILE_PATH = "credentials/MyKeyPair.pem";
+		public static final String EC2_USERNAME = "ubuntu";
+		public static final int SSH_PORT = 22;
+		public static final String SAMPLESORT_PART_TEMP = "sampleSortPartTemp";
+		public static final String SAMPLESORT_MY_PART = "sampleSortMyParts";
+		public static final String PUBLIC_DNS_FILE = "publicDnsFile.txt";
+	}
 	
 	String bucketName;
 	String fileObjectKey;
-	ArrayList<String> fileNameSizeList;
+	ArrayList<String> fileNameSizeList_GLOBAL;
+	static AWSCredentials credentials;
+	static AmazonS3 s3client;
 	
+	// EC2 Specific data
+	private static HashMap<Integer, String> serverIPaddrMap;
 	
-	public FileSystem(String bucketName){
+	public FileSystem(String bucketName) throws IOException{
 		this.bucketName = bucketName;
+		this.fileNameSizeList_GLOBAL = new ArrayList<String>();
 		
-		this.fileNameSizeList = new ArrayList<String>();
+		credentials = new ProfileCredentialsProvider().getCredentials();
+		s3client = new AmazonS3Client(credentials);
+		ObjectListing objList = s3client.listObjects(bucketName);
+	
+		// EC2 specific
+		serverIPaddrMap = new HashMap<Integer, String>();
+		addIPaddrsFromPublicDnsFile();
 		
-		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
-		AmazonS3 s3client = new AmazonS3Client(credentials);
-		ObjectListing objList = s3client.listObjects("cs6240sp16");
-		
-		
+		///////////////////////////////////////////////
 		// TODO: REMOVE AFTER DEBUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		
 		int debug_limitCount = 0;
 		
 		for(S3ObjectSummary objSum : objList.getObjectSummaries() ){
 			if(objSum.getKey().contains("climate") && objSum.getKey().contains("txt.gz")){
-				this.fileNameSizeList.add(objSum.getKey() + ":" + objSum.getSize());
+				this.fileNameSizeList_GLOBAL.add(objSum.getKey() + ":" + objSum.getSize());
 				debug_limitCount++;
 			}
 			if(debug_limitCount == 6) {break;}
@@ -66,8 +84,22 @@ public class FileSystem {
 		
 	}
 	
-	
-	
+	/**
+	 * Constructor helper to read IPs of all servers into Map
+	 * @throws IOException 
+	 * */
+	private void addIPaddrsFromPublicDnsFile() throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(Constants.PUBLIC_DNS_FILE));
+		String line;
+		int serverNumber = 0;
+		while((line = br.readLine()) != null){
+			serverIPaddrMap.put(serverNumber++, line.trim());
+		}
+		br.close();
+	}
+
+
+
 	/****************************************************************
 	 * 
 	 * 						AMAZON (S3) FILE SYSTEM
@@ -135,7 +167,7 @@ public class FileSystem {
 	
 	public HashMap<Integer, ArrayList<String>> getS3Parts(int parts){
 		
-		Collections.sort(this.fileNameSizeList, new Comparator<String>() {
+		Collections.sort(this.fileNameSizeList_GLOBAL, new Comparator<String>() {
 			@Override
 			public int compare(String o1, String o2) {
 				int val1 = Integer.parseInt(o1.split(":")[1]);
@@ -149,7 +181,7 @@ public class FileSystem {
 		HashMap<Integer, ArrayList<String>> partitionMap = new HashMap<Integer, ArrayList<String>>(); 
 	
 		int spinner = 0;
-		for (String fileNameSize : fileNameSizeList){
+		for (String fileNameSize : fileNameSizeList_GLOBAL){
 			if(spinner == parts) {spinner = 0;}
 			
 			if(!partitionMap.containsKey(spinner)){
@@ -170,19 +202,101 @@ public class FileSystem {
 	 * 
 	 * */
 
-	public static void writeToEC2(List<DataRecord> drsPartListToBeWritten, int serverNumber_p, int fromServer_s) throws IOException {
+	public static void writeToEC2(List<DataRecord> drsPartListToBeWritten, int serverNumber_p, int fromServer_s) throws IOException, JSchException, SftpException {
+		String fileName = Constants.SAMPLESORT_PART_TEMP+"/s"+fromServer_s+"p"+serverNumber_p+".txt";
 		
-		String fileName = fromServer_s+"/"+"s"+fromServer_s+"p"+serverNumber_p+".txt";
+		System.out.println("FileSystem : writeToEC2 : begin writing to local EC2" + fileName);
 		
 		File f = null;
-		
-		f = new File(fromServer_s + "");
+		f = new File("sampleSortPartTemp");
 		f.mkdir();
+		
+		System.out.println("f.mkdir for " + fileName);
 		
 		FileOutputStream fout = new FileOutputStream(fileName);
 		ObjectOutputStream oos = new ObjectOutputStream(fout);
 		oos.writeObject(drsPartListToBeWritten);
 
+		if(serverNumber_p != fromServer_s){
+			writeToLocalOfOtherServer(serverNumber_p, fromServer_s);
+		}
+		
+		oos.close();
+		fout.close();
+		
+		System.out.println("FileSystem : writeToEC2 : done writing all : " + fileName);
+	}
+
+
+	/**
+	 * GIVEN	source filename
+	 * 			destination file path
+	 * 			
+	 * Copies source file to destination on other server
+	 * */
+	private static void writeToLocalOfOtherServer(int serverNumber_p, int fromServer_s) throws SocketException, IOException, JSchException, SftpException {
+		
+		System.out.println("FileSystem : writeToLocalOfOtherServer : begin : ip " + serverIPaddrMap.get(serverNumber_p));
+		
+		scpCopy(Constants.SAMPLESORT_PART_TEMP+"/s"+fromServer_s+"p"+serverNumber_p, 
+				Constants.SAMPLESORT_MY_PART,
+				serverIPaddrMap.get(serverNumber_p));
+		// copy from sample sort parts temp TO sample sort my parts of other server
+		
+		System.out.println("FileSystem : writeToLocalOfOtherServer : done");
+	}
+	
+	/**
+	 * GIVEN	source filename
+	 * 			destination file path
+	 * 			destination EC2 instance's IP
+	 * Copies source file to destination on other server
+	 * */
+	// Reference : http://unix.stackexchange.com/questions/136165/java-code-to-copy-files-from-one-linux-machine-to-another-linux-machine
+	public static void scpCopy(String fsrc, String fdest, String destIP) throws SocketException, IOException, JSchException, SftpException{
+		JSch jsch = new JSch();
+		jsch.addIdentity(Constants.PEM_FILE_PATH);
+		Session session = null;
+		session = jsch.getSession(Constants.EC2_USERNAME, destIP, Constants.SSH_PORT);
+		session.setPassword("");
+		session.setConfig("StrictHostKeyChecking", "no");
+		    session.connect();
+		ChannelSftp channel = null;
+		channel = (ChannelSftp)session.openChannel("sftp");
+		channel.connect();
+		    File localFile = new File(fsrc);
+		    //If you want you can change the directory using the following line.
+		    channel.cd(fdest);
+		    channel.put(new FileInputStream(localFile),localFile.getName());
+		    channel.disconnect();
+		session.disconnect();
+	}
+	
+	/*
+	 * 			WRITE TO EC2 LOCAL DISK
+	 * 
+	 * */
+	
+	public ArrayList<DataRecord> readMyParts(int serverNumber) throws IOException, ClassNotFoundException{
+		
+		ArrayList<DataRecord> myDataRecordList = new ArrayList<DataRecord>();
+		
+		File folderIn = new File(Constants.SAMPLESORT_MY_PART+"/");
+		
+		for(File partFile : folderIn.listFiles()){
+			if(partFile.getName().contains("p"+serverNumber)){
+				System.out.println("Server "+serverNumber + " reading at " + partFile.getName());
+				FileInputStream fileStream = new FileInputStream(folderIn+"/"+partFile.getName());
+				ObjectInputStream ois = new ObjectInputStream(fileStream);
+				
+				ArrayList<DataRecord> readList = (ArrayList<DataRecord>) ois.readObject();
+				System.out.println("read list " + readList + "");
+				// TODO: MAKE MERGER
+				myDataRecordList.addAll(readList);
+			}
+		}
+		
+		return myDataRecordList;
 	}
 
 }

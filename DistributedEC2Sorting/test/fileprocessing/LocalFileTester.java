@@ -2,27 +2,55 @@ package fileprocessing;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 import datafile.DataRecord;
+import utils.FileSystem;
+import utils.S3FileReader;
 
 public class LocalFileTester  {
 
 	public static void main(String[] args) throws Exception{
-		File folderIn = new File(0+"/");
+		String fromServer_s = "2";
+		String serverNumber_p = "1";
+		String fileName = fromServer_s+"/"+"s"+fromServer_s+"p"+serverNumber_p+".txt";
+		
+		
+
+//		S3FileReader s3fr = new S3FileReader("cs6240sp16", "climate/199703hourly.txt.gz");
+//		ArrayList<DataRecord> drListFor199703 = FileSystem.readRecordsFrom("cs6240sp16", "climate/199703hourly.txt.gz");
+//	
+//		
+//		File f = null;
+//		
+//		f = new File(fromServer_s + "");
+//		f.mkdir();
+//		
+//		FileOutputStream fout = new FileOutputStream(fileName);
+//		ObjectOutputStream oos = new ObjectOutputStream(fout);
+//		oos.writeObject(drListFor199703);
+		
+		
+		File folderIn = new File(fromServer_s+"/");
 		
 		
 		for(File partFile : folderIn.listFiles()){
 			
-			FileInputStream fileStream = new FileInputStream(folderIn+"/"+partFile.getName());
-			ObjectInputStream ois = new ObjectInputStream(fileStream);
-			ArrayList<DataRecord> drList = (ArrayList<DataRecord>) ois.readObject();
+			if(partFile.getName().contains("p"+serverNumber_p)){
 			
-			for(DataRecord dr : drList){
-				System.out.println(dr.getSortValue());
+				System.out.println("file : " + partFile.getName());
+				FileInputStream fileStream = new FileInputStream(folderIn+"/"+partFile.getName());
+				ObjectInputStream ois = new ObjectInputStream(fileStream);
+				ArrayList<DataRecord> drList = (ArrayList<DataRecord>) ois.readObject();
+				
+				for(DataRecord dr : drList){
+					System.out.println("====================");
+					System.out.println(dr.getSortValue());
+				}
 			}
-			System.out.println("====================");
 		}
 		
 	}
