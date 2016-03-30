@@ -90,6 +90,12 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 		return s3fr.readFromOffsetToLen(this.fromChar, this.recordLength);
 	}
 	
+	
+	@Override
+	public String toString() {
+		return "<"+this.getSortValue()+">";
+	}
+	
 	@Override
 	public int compareTo(DataRecord o) {
 		if(this.sortValue > o.getSortValue()) {return 1;}

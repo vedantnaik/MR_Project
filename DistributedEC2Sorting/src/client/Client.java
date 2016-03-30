@@ -8,7 +8,10 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+
+import utils.FileSystem;
 
 /**
  * A sample client which connects to the server and can issue a sorting command
@@ -35,43 +38,48 @@ public class Client {
 	 *            the server port eg. 1212
 	 */
 	public void callSorter(String fileName, String serverIP) {
-		String contents = "";
-		String[] contentsArray = {};
-		String[] contentsA = new String[ports.length];
-		int counter = 0;
-		try {
-			FileInputStream fstream = new FileInputStream(fileName);
-			DataInputStream in = new DataInputStream(fstream);
-			BufferedReader br = new BufferedReader(new InputStreamReader(in));
-			String strLine;
-			while ((strLine = br.readLine()) != null) {
-				contents = contents + strLine + ",";
-				counter++;
-			}
-			br.close();
-			in.close();
-			fstream.close();
-		} catch (Exception e) {
-			System.out.println(e + "Cannot read from file");
-			return;
-		}
-		contentsArray = contents.split(",");
-		int j = 0;
-		List<List<Integer>> contentsList = new ArrayList<>();
-		for (int i = 0; i < ports.length; i++) {
-			contentsList.add(i, new ArrayList<Integer>());
-			String temp = "";
-			for (; j < (((i + 1) * (contentsArray.length)) / ports.length); j++) {
-				temp += contentsArray[j] + ",";
-			}
-			contentsA[i] = temp;
-			for(String sl : temp.split(","))
-				contentsList.get(i).add(Integer.valueOf(sl));
-		}
-		
-		for (int i = 0; i < ports.length; i++)
-			System.out.println(" contents Array " + contentsList.get(i));
+//		String contents = "";
+//		String[] contentsArray = {};
+//		String[] contentsA = new String[ports.length];
+//		int counter = 0;
+//		try {
+//			FileInputStream fstream = new FileInputStream(fileName);
+//			DataInputStream in = new DataInputStream(fstream);
+//			BufferedReader br = new BufferedReader(new InputStreamReader(in));
+//			String strLine;
+//			while ((strLine = br.readLine()) != null) {
+//				contents = contents + strLine + ",";
+//				counter++;
+//			}
+//			br.close();
+//			in.close();
+//			fstream.close();
+//		} catch (Exception e) {
+//			System.out.println(e + "Cannot read from file");
+//			return;
+//		}
+//		contentsArray = contents.split(",");
+//		int j = 0;
+//		List<List<Integer>> contentsList = new ArrayList<>();
+//		for (int i = 0; i < ports.length; i++) {
+//			contentsList.add(i, new ArrayList<Integer>());
+//			String temp = "";
+//			for (; j < (((i + 1) * (contentsArray.length)) / ports.length); j++) {
+//				temp += contentsArray[j] + ",";
+//			}
+//			contentsA[i] = temp;
+//			for(String sl : temp.split(","))
+//				contentsList.get(i).add(Integer.valueOf(sl));
+//		}
+//		
+//		for (int i = 0; i < ports.length; i++)
+//			System.out.println(" contents Array " + contentsList.get(i));
 
+		
+		FileSystem myS3FS = new FileSystem("cs6240sp16");
+		
+		HashMap<Integer, ArrayList<String>> partsMap = myS3FS.getS3Parts(ports.length); 
+		
 		try {
 
 			for (int i = 0; i < ports.length; i++) {
@@ -84,8 +92,9 @@ public class Client {
 				
 				out[i].writeBytes("sort#start\n");
 				
-				for(int y = 0; y < contentsList.get(i).size(); y++)
-					out[i].writeBytes(contentsList.get(i).get(y)+"\n");
+				for(String fileNameIter : partsMap.get(i)){
+					out[i].writeBytes(fileNameIter+"\n");
+				}
 				
 				out[i].writeBytes("sort#end\n");
 				System.out.println("Running job on Server ..." + i);

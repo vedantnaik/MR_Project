@@ -1,12 +1,17 @@
 package utils;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -46,10 +51,17 @@ public class FileSystem {
 		AmazonS3 s3client = new AmazonS3Client(credentials);
 		ObjectListing objList = s3client.listObjects("cs6240sp16");
 		
+		
+		// TODO: REMOVE AFTER DEBUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		
+		int debug_limitCount = 0;
+		
 		for(S3ObjectSummary objSum : objList.getObjectSummaries() ){
 			if(objSum.getKey().contains("climate") && objSum.getKey().contains("txt.gz")){
 				this.fileNameSizeList.add(objSum.getKey() + ":" + objSum.getSize());
+				debug_limitCount++;
 			}
+			if(debug_limitCount == 6) {break;}
 		}
 		
 	}
@@ -83,8 +95,10 @@ public class FileSystem {
 			
 			int offset = header.length() + 1;
 			
+			// TODO: REMOVE AFTER DEBUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			
 			// TODO: remove count condition to read all file
-			while((fileLine = buffered.readLine())!=null /*&& count < 10*/){
+			while((fileLine = buffered.readLine())!=null && count < 5){
 				
 				// TODO: read line > csv > get offsets > get value > make DataRecord and return list
 
@@ -99,6 +113,10 @@ public class FileSystem {
 //					sortValue
 					
 					double dryBulbTemp = Double.parseDouble(DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP));
+					
+					System.out.println("=========================================================");
+					System.out.println("read record \t\t" + dryBulbTemp);
+					System.out.println("=========================================================");
 					
 					dataRecordList.add(new DataRecord(fileObjectKey, offset, fileLine.length(), dryBulbTemp));
 				}
@@ -143,6 +161,28 @@ public class FileSystem {
 		}
 		
 		return partitionMap;
+	}
+
+
+	
+	/*
+	 * 			WRITE TO EC2 LOCAL DISK
+	 * 
+	 * */
+
+	public static void writeToEC2(List<DataRecord> drsPartListToBeWritten, int serverNumber_p, int fromServer_s) throws IOException {
+		
+		String fileName = fromServer_s+"/"+"s"+fromServer_s+"p"+serverNumber_p+".txt";
+		
+		File f = null;
+		
+		f = new File(fromServer_s + "");
+		f.mkdir();
+		
+		FileOutputStream fout = new FileOutputStream(fileName);
+		ObjectOutputStream oos = new ObjectOutputStream(fout);
+		oos.writeObject(drsPartListToBeWritten);
+
 	}
 
 }
