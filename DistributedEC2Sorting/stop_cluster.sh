@@ -1,5 +1,4 @@
 #!/bin/bash
-
 instance_ids=`aws ec2 describe-instances --filters "Name=instance-type,Values=m3.large" | jq -r ".Reservations[].Instances[].InstanceId"`
 echo $instance_ids
 
