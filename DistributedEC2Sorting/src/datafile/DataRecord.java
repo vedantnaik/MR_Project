@@ -42,6 +42,13 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 		this.recordLength = recordLength;
 		this.sortValue = sortValue;
 	}
+	
+	public DataRecord(DataRecord copyFrom) {
+		this.fileName = copyFrom.getFileName();
+		this.fromChar = copyFrom.getFromChar();
+		this.recordLength = copyFrom.getRecordLength();
+		this.sortValue = copyFrom.getSortValue();
+	}
 
 	// DataRecord Methods
 	
@@ -81,6 +88,12 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	 * */
 	public String readRecordFrom(S3FileReader s3fr) throws IOException{
 		return s3fr.readFromOffsetToLen(this.fromChar, this.recordLength);
+	}
+	
+	
+	@Override
+	public String toString() {
+		return "<"+this.getSortValue()+">";
 	}
 	
 	@Override
