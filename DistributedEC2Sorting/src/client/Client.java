@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import utils.FileSystem;
 
@@ -21,10 +22,43 @@ import utils.FileSystem;
  *
  */
 public class Client {
-	static int[] ports = { 1210, 1211, 1212 };
-	Socket[] sendingSocket = { null, null, null };
-	DataOutputStream[] out = { null, null, null };
-	BufferedReader[] inFromServer = { null, null, null };
+	
+//	static int[] ports = { 1210, 1211, 1212 };
+	static int port = 1210;
+//	Socket[] sendingSocket = { null, null, null };
+//	DataOutputStream[] out = { null, null, null };
+//	BufferedReader[] inFromServer = { null, null, null };
+	
+	private static Map<Integer, DataOutputStream> out = null;
+	private static Map<Integer, Socket> sendingSocket = null;
+	private static Map<Integer, BufferedReader> inFromServer = null;
+	private static int totalServers;
+	
+	static FileSystem MRFS;
+	private static Map<Integer, String> servers;
+	
+	public Client() {
+		try {
+			servers = FileSystem.getServerIPaddrMap();
+			totalServers = servers.size();
+			out = new HashMap<>(2 * totalServers);
+			sendingSocket = new HashMap<>(2 * totalServers);
+			inFromServer = new HashMap<>(2 * totalServers);
+			System.out.println("servers are " + servers);
+			for (int i = 0; i < totalServers; i++) {
+//				if (out.get(i) == null) {
+					sendingSocket.put(i, new Socket(servers.get(i), port));
+					out.put(i, new DataOutputStream(sendingSocket
+							.get(i).getOutputStream()));
+					inFromServer.put(i ,new BufferedReader(new InputStreamReader(
+					sendingSocket.get(i).getInputStream())));
+//				}
+			}
+		} catch (IOException e) {
+			System.out.println("Unable to connect to all servers!");
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * Calls the server with sort function and sends the file inputs as String
@@ -39,40 +73,40 @@ public class Client {
 	 *            the server port eg. 1212
 	 * @throws IOException 
 	 */
-	public void callSorter(String fileName, String serverIP) throws IOException {
+	public void callSorter(String fileName) throws IOException {
 		
 		FileSystem myS3FS = new FileSystem("cs6240sp16");
 		
-		HashMap<Integer, ArrayList<String>> partsMap = myS3FS.getS3Parts(ports.length); 
-		
+		HashMap<Integer, ArrayList<String>> partsMap = myS3FS.getS3Parts(totalServers); 
+		System.out.println("Map Parts " + partsMap);
 		try {
 
-			for (int i = 0; i < ports.length; i++) {
+			for (int i = 0; i < totalServers; i++) {
 
-				sendingSocket[i] = new Socket(serverIP, ports[i]);
-				out[i] = new DataOutputStream(
-						sendingSocket[i].getOutputStream());
-				inFromServer[i] = new BufferedReader(new InputStreamReader(
-						sendingSocket[i].getInputStream()));
+//				sendingSocket.put(i, new Socket(servers.get(i), port));
+//				out.put(i, new DataOutputStream(
+//						sendingSocket.get(i).getOutputStream()));
+//				inFromServer.put(i ,new BufferedReader(new InputStreamReader(
+//						sendingSocket.get(i).getInputStream())));
 				
-				out[i].writeBytes("sort#start\n");
-				
+				out.get(i).writeBytes("sort#start\n");
+				System.out.println("Map Parts to " + servers.get(i) + " => " + partsMap.get(i));
 				for(String fileNameIter : partsMap.get(i)){
-					out[i].writeBytes(fileNameIter+"\n");
+					out.get(i).writeBytes(fileNameIter+"\n");
 				}
 				
-				out[i].writeBytes("sort#end\n");
+				out.get(i).writeBytes("sort#end\n");
 				System.out.println("Running job on Server ..." + i);
 
 			}
 
 			// done phase
 			int replies = 0;
-			boolean[] replied = new boolean[ports.length];
+			boolean[] replied = new boolean[totalServers];
 			while (true) {
 				for (int i = 0; i < replied.length && !replied[i]; i++) {
 
-					String result = inFromServer[i].readLine();
+					String result = inFromServer.get(i).readLine();
 					String[] returnedResult = result.split("#");
 					System.out.println(returnedResult[0] + " Results from : "
 							+ i);
@@ -82,7 +116,7 @@ public class Client {
 						replies++;
 					}
 				}
-				if (replies == ports.length) {
+				if (replies == totalServers) {
 					System.out.println("replied by " + replies);
 					break;
 				}
@@ -93,8 +127,8 @@ public class Client {
 
 			System.out.println("sending command to distribute now!");
 			// distribute pivots
-			for (int i = 0; i < ports.length; i++) {
-				out[i].writeBytes("distribute#All" + "\n");
+			for (int i = 0; i < totalServers; i++) {
+				out.get(i).writeBytes("distribute#All" + "\n");
 			}
 			System.out.println("distributed!");
 
@@ -112,12 +146,12 @@ public class Client {
 	 * @param serverPort
 	 *            the server port eg. 1212
 	 */
-	private void killer(String serverIP) {
+	private void killer() {
 
 		try {
 
-			for (int i = 0; i < ports.length; i++) {
-				Socket sendingSocket = new Socket(serverIP, ports[i]);
+			for (int i = 0; i < totalServers; i++) {
+				Socket sendingSocket = new Socket(servers.get(i), port);
 				DataOutputStream out = new DataOutputStream(
 						sendingSocket.getOutputStream());
 				out.writeBytes("kill#" + "\n");
@@ -140,14 +174,18 @@ public class Client {
 		if (args.length != 1) {
 			System.out
 					.println("Include Server IP Address. Currently only localhost!");
-			System.out.println("Usage Client 127.0.0.1");
+			System.out.println("Usage Client <bucketname>");
 			System.exit(0);
 		}
 		BufferedReader din = new BufferedReader(
 				new InputStreamReader(System.in));
-		String serverIP = args[0];
 
+		String bucketName = args[0];
+		System.out.println("reading s3 bucket");
+		MRFS = new FileSystem(bucketName);
+		System.out.println("connecting to servers");
 		Client client = new Client();
+		System.out.println("Connected to all Servers!");
 		while (true) {
 			System.out.println("1 - Enter File Name to Sort");
 			System.out.println("9 - Self Destruct");
@@ -161,10 +199,10 @@ public class Client {
 						+ "homeworks\\hw8-Distributed Sorting\\MR_Project\\"
 						+ "DistributedEC2Sorting\\test_sort.txt"; 
 				System.out.println("filename " + fileName);
-				client.callSorter(fileName, serverIP);
+				client.callSorter(fileName);
 
 			} else if (line.equals("9")) {
-				client.killer(serverIP);
+				client.killer();
 				System.out.println("Killed Server, Self Destruct!");
 				System.exit(0);
 			} else {

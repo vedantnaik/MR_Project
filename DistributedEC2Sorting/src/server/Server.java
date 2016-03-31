@@ -3,25 +3,24 @@ package server;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import utils.FileSystem;
+import utils.S3FileReader;
 
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 
 import datafile.DataRecord;
-import utils.FileSystem;
-import utils.S3FileReader;
 
 /**
  * Server program which listens on the port requested or passed in the URL.
@@ -30,18 +29,18 @@ import utils.S3FileReader;
 public class Server implements Runnable {
 	private Socket connection = null;
 	static ServerSocket serverSocket = null;
-	static int[] ports = { 1210, 1211, 1212 };
-
-	int numberOfProcessors = ports.length + 1;
+//	static int[] ports = { 1210, 1211, 1212 };
+	static int port = 1210;
+	static int numberOfProcessors = 0;
 	static int serverNumber = 0;
 
 	private static int serversReplied = 0;
 	private static int mypart_serversReplied = 0;
 
-	private static List<Double> dataRecordPivotsList = new ArrayList<Double>();
-	private static List<Double> serverDataRecordPivotValuesList = new ArrayList<Double>();
-	private static List<Double> globalDataRecordPivotValuesList = new ArrayList<Double>();
-	private static List<Double> stage5ReadDataRecordList = new ArrayList<Double>();
+	private static List<Double> dataRecordPivotsList = new ArrayList<Double>(1000);
+	private static List<Double> serverDataRecordPivotValuesList = new ArrayList<Double>(1000);
+	private static List<Double> globalDataRecordPivotValuesList = new ArrayList<Double>(1000);
+	private static List<Double> stage5ReadDataRecordList = new ArrayList<Double>(1000);
 	
 //	private static List<Integer> mypivsArray = new ArrayList<>();
 //	private static List<Integer> serverPivsArray = new ArrayList<>();
@@ -54,23 +53,27 @@ public class Server implements Runnable {
 	private static boolean receivingMyPartitionON = false;
 	static Object lock;
 	// for now
-	private String serverIP = "127.0.0.1";
+//	private static String serverIP; // = "127.0.0.1";
 
-	private static DataOutputStream outDist[] = { null, null, null };
-	private static Socket[] sendingSocketDist = { null, null, null };
+//	private static DataOutputStream outDist[] = { null, null, null };
+//	private static Socket[] sendingSocketDist = { null, null, null };
 
 //	private static List<Integer> myInts = new ArrayList<>();
 //	private static List<Integer> myInts2 = new ArrayList<>();
 	
 	
+	// List of Sockets and OutputStream
+	private static Map<Integer, DataOutputStream> outDist = null;
+	private static Map<Integer, Socket> sendingSocketDist = null;
+	private static int totalServers;
 	
 	///// DataRecord sort from s3
 	
 	private static String bucketName;
-	private static List<String> fileNameList = new ArrayList<String>();
+	private static List<String> fileNameList = new ArrayList<String>(1000);
 	
-	private static List<DataRecord> serverDataRecords = new ArrayList<DataRecord>();
-	private static List<DataRecord> serverDataRecordsCache = new ArrayList<DataRecord>();
+	private static List<DataRecord> serverDataRecords = new ArrayList<DataRecord>(1000);
+	private static List<DataRecord> serverDataRecordsCache = new ArrayList<DataRecord>(1000);
 	
 	///// File system
 	
@@ -87,11 +90,12 @@ public class Server implements Runnable {
 	}
 
 	public void initOtherSockets() throws UnknownHostException, IOException {
-		for (int i = 0; i < ports.length; i++) {
-			if (outDist[i] == null) {
-				sendingSocketDist[i] = new Socket(serverIP, ports[i]);
-				outDist[i] = new DataOutputStream(
-						sendingSocketDist[i].getOutputStream());
+				
+		for (int i = 0; i < totalServers; i++) {
+			if (outDist.get(i) == null) {
+				sendingSocketDist.put(i, new Socket(FileSystem.getServerIPaddrMap().get(i), port));
+				outDist.put(i, new DataOutputStream(
+						sendingSocketDist.get(i).getOutputStream()));
 			}
 		}
 	}
@@ -110,7 +114,15 @@ public class Server implements Runnable {
 		
 		lock = new Object();
 		serverNumber = Integer.parseInt(args[0]);
-		int port = ports[serverNumber];
+
+		totalServers = FileSystem.getServerIPaddrMap().size();
+		numberOfProcessors = totalServers;
+		System.out.println("totalServers " + FileSystem.getServerIPaddrMap().size());
+		outDist = new HashMap<>(2 * totalServers);
+		sendingSocketDist = new HashMap<>(2 * totalServers);
+		
+//		serverIP = FileSystem.getServerIPaddrMap().get(serverNumber);
+		System.out.println("servers to connect to : " + FileSystem.getServerIPaddrMap());
 		System.out.println("Started Server " + serverNumber + " @ " + port);
 		try {
 			serverSocket = new ServerSocket(port);
@@ -238,10 +250,10 @@ public class Server implements Runnable {
 
 		for (String fileName : fileNameList){
 			try {
-				S3FileReader s3fr = new S3FileReader(bucketName, fileName);
+//				S3FileReader s3fr = new S3FileReader(bucketName, fileName);
 				serverDataRecords.addAll(MRFS.readRecordsFrom(bucketName, fileName));
 				
-			} catch (IOException e) {
+			} catch (Exception e) {
 				System.err.println("SERVER : Stage 1 Sorting : unable to read file");
 				e.printStackTrace();
 			}
@@ -252,11 +264,13 @@ public class Server implements Runnable {
 	private void stage2_select_my_pivots() throws IOException {
 		
 		String piv = "";
-		List<Double> pivArray = new ArrayList<Double>();
+		List<Double> pivArray = new ArrayList<Double>(1000);
 
-		
+		System.out.println("serverDataRecords size " + serverDataRecords.size());
 		for (int i = 0; i < serverDataRecords.size() ; i += numberOfProcessors) {
+			System.out.println("Adding ");
 			pivArray.add(serverDataRecords.get(i).getSortValue());
+			System.out.println("added " + serverDataRecords.get(i).getSortValue());
 		}
 		
 		System.out.println("my pivots are : " + pivArray);
@@ -264,12 +278,12 @@ public class Server implements Runnable {
 
 		// send only to server 0
 		if (serverNumber != 0) {
-			System.out.println("sending distributePivot#" + piv + "\n");
-			outDist[0].writeBytes("distributePivot#start\n");
+			System.out.println("sending distributePivot#" + piv + " to " + FileSystem.getServerIPaddrMap().get(0));
+			outDist.get(0).writeBytes("distributePivot#start\n");
 			for(int i = 0; i < serverDataRecords.size() ; i += numberOfProcessors){
-				outDist[0].writeBytes(serverDataRecords.get(i).getSortValue() + "\n");
+				outDist.get(0).writeBytes(serverDataRecords.get(i).getSortValue() + "\n");
 			}
-			outDist[0].writeBytes("distributePivot#end\n");
+			outDist.get(0).writeBytes("distributePivot#end\n");
 			System.out.println("distributed from serverNumber: "
 					+ serverNumber);
 			// server number 0 only receives
@@ -291,7 +305,7 @@ public class Server implements Runnable {
 			serversReplied++;
 		}
 
-		if (serversReplied == ports.length - 1) {
+		if (serversReplied == totalServers - 1) {
 			// adding my own pivs
 
 			serverDataRecordPivotValuesList.addAll(dataRecordPivotsList);
@@ -311,14 +325,14 @@ public class Server implements Runnable {
 			System.out.println("sending global pivots " + pivArray);
 			System.out.println("NEXT STAGE UNCLEAR!!");
 			
-			for (int i = 0; i < ports.length; i++) {
-				outDist[i].writeBytes("globalpivot#start\n");
+			for (int i = 0; i < totalServers; i++) {
+				outDist.get(i).writeBytes("globalpivot#start\n");
 
 				for(int j = 0 ; j < pivArray.size() ; j++){
-					outDist[i].writeBytes(pivArray.get(j).toString() + "\n");
+					outDist.get(i).writeBytes(pivArray.get(j).toString() + "\n");
 				}
 				
-				outDist[i].writeBytes("globalpivot#end\n");
+				outDist.get(i).writeBytes("globalpivot#end\n");
 			}
 			
 			// serversReplied is useless now
@@ -343,14 +357,14 @@ public class Server implements Runnable {
 			serversReplied++;
 				
 			int count = 0, counterPivot = 0;
-			List<List<Integer>> integersToBeSent = new ArrayList<>();
+//			List<List<Integer>> integersToBeSent = new ArrayList<>();
 
 			
-			List<List<DataRecord>> drsToBeSent = new ArrayList<>();
+			List<List<DataRecord>> drsToBeSent = new ArrayList<>(1000);
 			
 			
 			for(int i = 0; i < globalDataRecordPivotValuesList.size() + 1; i++){
-				drsToBeSent.add(i, new ArrayList<DataRecord>());
+				drsToBeSent.add(i, new ArrayList<DataRecord>(1000));
 			}
 			
 			for (DataRecord drs : serverDataRecords) {
@@ -388,7 +402,7 @@ public class Server implements Runnable {
 				System.out.println("Sending Partition from Server"
 						+ serverNumber + " to Server" + (serverNumber + i)
 						% 3 + " " + sendig);
-				outDist[(serverNumber + i) % 3].writeBytes("mypart#start\n");
+				outDist.get((serverNumber + i) % 3).writeBytes("mypart#start\n");
 				
 				int sendToServerNumber = (serverNumber + i) % 3;
 				try {
@@ -398,7 +412,7 @@ public class Server implements Runnable {
 					e.printStackTrace();
 				}
 								
-				outDist[(serverNumber + i) % 3].writeBytes("mypart#end\n");
+				outDist.get((serverNumber + i) % 3).writeBytes("mypart#end\n");
 			}
 			
 			
@@ -437,7 +451,7 @@ public class Server implements Runnable {
 			
 			
 			
-			if (mypart_serversReplied == ports.length - 1) {
+			if (mypart_serversReplied == totalServers - 1) {
 
 // TODO:
 				

@@ -3,7 +3,6 @@ package utils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -17,7 +16,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import com.amazonaws.auth.AWSCredentials;
@@ -44,7 +42,8 @@ public class FileSystem {
 		public static final String EC2_USERNAME = "ubuntu";
 		public static final int SSH_PORT = 22;
 		public static final String SAMPLESORT_PART_TEMP = "sampleSortPartTemp";
-		public static final String SAMPLESORT_MY_PART = "sampleSortMyParts";
+		public static final String SAMPLESORT_MY_PART = "~/Project/sampleSortMyParts";
+		public static final String SAMPLESORT_MY_PART_RELATIVE = "sampleSortMyParts";
 		public static final String PUBLIC_DNS_FILE = "publicDnsFile.txt";
 	}
 	
@@ -55,7 +54,7 @@ public class FileSystem {
 	static AmazonS3 s3client;
 	
 	// EC2 Specific data
-	private static HashMap<Integer, String> serverIPaddrMap;
+	public static HashMap<Integer, String> serverIPaddrMap;
 	
 	public FileSystem(String bucketName) throws IOException{
 		this.bucketName = bucketName;
@@ -204,14 +203,21 @@ public class FileSystem {
 
 	public static void writeToEC2(List<DataRecord> drsPartListToBeWritten, int serverNumber_p, int fromServer_s) throws IOException, JSchException, SftpException {
 		String fileName = Constants.SAMPLESORT_PART_TEMP+"/s"+fromServer_s+"p"+serverNumber_p+".txt";
-		
-		System.out.println("FileSystem : writeToEC2 : begin writing to local EC2" + fileName);
+			
+		System.out.println("FileSystem : writeToEC2 : begin writing to local EC2 : " + fileName);
 		
 		File f = null;
-		f = new File("sampleSortPartTemp");
+		f = new File(Constants.SAMPLESORT_PART_TEMP);
 		f.mkdir();
 		
 		System.out.println("f.mkdir for " + fileName);
+		
+		System.out.println("test reading folders");
+		File folderIn1 = new File(Constants.SAMPLESORT_PART_TEMP+"/");
+		
+		for(File partFile : folderIn1.listFiles()){
+			System.out.println("folder: " + partFile.getName());
+		}
 		
 		FileOutputStream fout = new FileOutputStream(fileName);
 		ObjectOutputStream oos = new ObjectOutputStream(fout);
@@ -237,8 +243,10 @@ public class FileSystem {
 	private static void writeToLocalOfOtherServer(int serverNumber_p, int fromServer_s) throws SocketException, IOException, JSchException, SftpException {
 		
 		System.out.println("FileSystem : writeToLocalOfOtherServer : begin : ip " + serverIPaddrMap.get(serverNumber_p));
+		System.out.println("FileSystem : src : " + Constants.SAMPLESORT_PART_TEMP + "/s" + fromServer_s + "p" + serverNumber_p 
+				+ ".txt" + " destfolder: "	+ Constants.SAMPLESORT_MY_PART);
 		
-		scpCopy(Constants.SAMPLESORT_PART_TEMP+"/s"+fromServer_s+"p"+serverNumber_p, 
+		scpCopy(Constants.SAMPLESORT_PART_TEMP+"/s"+fromServer_s+"p"+serverNumber_p+".txt", 
 				Constants.SAMPLESORT_MY_PART,
 				serverIPaddrMap.get(serverNumber_p));
 		// copy from sample sort parts temp TO sample sort my parts of other server
@@ -265,9 +273,14 @@ public class FileSystem {
 		channel = (ChannelSftp)session.openChannel("sftp");
 		channel.connect();
 		    File localFile = new File(fsrc);
+		    System.out.println("local file name : " + fsrc + " localFile " + localFile.getName());
+		   
 		    //If you want you can change the directory using the following line.
-		    channel.cd(fdest);
-		    channel.put(new FileInputStream(localFile),localFile.getName());
+//		    channel.cd("sampleSortMyParts");
+		    System.out.println("pwd " + channel.pwd());
+		    System.out.println("sampleSortPartTemp/"+localFile.getName() + " ::  " + "sampleSortMyParts/");
+		    channel.put("sampleSortPartTemp/"+localFile.getName() , "sampleSortMyParts/");
+		    
 		    channel.disconnect();
 		session.disconnect();
 	}
@@ -282,21 +295,34 @@ public class FileSystem {
 		ArrayList<DataRecord> myDataRecordList = new ArrayList<DataRecord>();
 		
 		File folderIn = new File(Constants.SAMPLESORT_MY_PART+"/");
+
+		System.out.println("Folder In : " + folderIn);
 		
-		for(File partFile : folderIn.listFiles()){
-			if(partFile.getName().contains("p"+serverNumber)){
-				System.out.println("Server "+serverNumber + " reading at " + partFile.getName());
-				FileInputStream fileStream = new FileInputStream(folderIn+"/"+partFile.getName());
-				ObjectInputStream ois = new ObjectInputStream(fileStream);
-				
-				ArrayList<DataRecord> readList = (ArrayList<DataRecord>) ois.readObject();
-				System.out.println("read list " + readList + "");
-				// TODO: MAKE MERGER
-				myDataRecordList.addAll(readList);
+		if(null != folderIn){
+			for(File partFile : folderIn.listFiles()){
+				if(partFile.getName().contains("p"+serverNumber)){
+					System.out.println("Server "+serverNumber + " reading at " + partFile.getName());
+					FileInputStream fileStream = new FileInputStream(folderIn+"/"+partFile.getName());
+					ObjectInputStream ois = new ObjectInputStream(fileStream);
+					
+					ArrayList<DataRecord> readList = (ArrayList<DataRecord>) ois.readObject();
+					System.out.println("read list " + readList + "");
+					// TODO: MAKE MERGER
+					myDataRecordList.addAll(readList);
+					ois.close();
+					fileStream.close();
+				}
 			}
 		}
-		
 		return myDataRecordList;
+	}
+
+	public static HashMap<Integer, String> getServerIPaddrMap() {
+		return serverIPaddrMap;
+	}
+
+	public static void setServerIPaddrMap(HashMap<Integer, String> serverIPaddrMap) {
+		FileSystem.serverIPaddrMap = serverIPaddrMap;
 	}
 
 }
