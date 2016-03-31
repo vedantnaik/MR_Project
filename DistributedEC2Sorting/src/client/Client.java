@@ -73,21 +73,15 @@ public class Client {
 	 *            the server port eg. 1212
 	 * @throws IOException 
 	 */
-	public void callSorter(String fileName) throws IOException {
+	public void callSorter(String inputBucketName, String outputBucketName) throws IOException {
 		
-		FileSystem myS3FS = new FileSystem("cs6240sp16");
+		FileSystem myS3FS = new FileSystem(inputBucketName, outputBucketName);
 		
 		HashMap<Integer, ArrayList<String>> partsMap = myS3FS.getS3Parts(totalServers); 
 		System.out.println("Map Parts " + partsMap);
 		try {
 
 			for (int i = 0; i < totalServers; i++) {
-
-//				sendingSocket.put(i, new Socket(servers.get(i), port));
-//				out.put(i, new DataOutputStream(
-//						sendingSocket.get(i).getOutputStream()));
-//				inFromServer.put(i ,new BufferedReader(new InputStreamReader(
-//						sendingSocket.get(i).getInputStream())));
 				
 				out.get(i).writeBytes("sort#start\n");
 				System.out.println("Map Parts to " + servers.get(i) + " => " + partsMap.get(i));
@@ -180,9 +174,11 @@ public class Client {
 		BufferedReader din = new BufferedReader(
 				new InputStreamReader(System.in));
 
-		String bucketName = args[0];
+		String inputBucketName = args[0];
+		String outputBucketName = args[1];
+		
 		System.out.println("reading s3 bucket");
-		MRFS = new FileSystem(bucketName);
+		MRFS = new FileSystem(inputBucketName, outputBucketName);
 		System.out.println("connecting to servers");
 		Client client = new Client();
 		System.out.println("Connected to all Servers!");
@@ -193,14 +189,7 @@ public class Client {
 			String line = din.readLine();
 
 			if (line.equals("1")) {
-				System.out.print("Enter filename (from current directory) : ");
-				String fileName = "C:\\Users\\Dixit_Patel\\Google Drive\\"
-						+ "Working on a dream\\StartStudying\\sem4\\MapReduce\\"
-						+ "homeworks\\hw8-Distributed Sorting\\MR_Project\\"
-						+ "DistributedEC2Sorting\\test_sort.txt"; 
-				System.out.println("filename " + fileName);
-				client.callSorter(fileName);
-
+				client.callSorter(inputBucketName, outputBucketName);
 			} else if (line.equals("9")) {
 				client.killer();
 				System.out.println("Killed Server, Self Destruct!");

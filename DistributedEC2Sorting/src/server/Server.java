@@ -69,7 +69,9 @@ public class Server implements Runnable {
 	
 	///// DataRecord sort from s3
 	
-	private static String bucketName;
+	private static String inputBucketName;
+	private static String outputBucketName;
+	
 	private static List<String> fileNameList = new ArrayList<String>(1000);
 	
 	private static List<DataRecord> serverDataRecords = new ArrayList<DataRecord>(1000);
@@ -103,14 +105,15 @@ public class Server implements Runnable {
 	public static void main(String args[]) throws Exception {
 		if (args.length != 2) {
 			System.out.println("Syntax error: Include my Number");
-			System.out.println("Usage: Server <servernumber> <BucketName>");
+			System.out.println("Usage: Server <servernumber> <InputBucketName>");
 			System.exit(0);
 		}
 		
 		
-		bucketName = args[1];
+		inputBucketName = args[1];
 		
-		MRFS = new FileSystem(bucketName);
+		MRFS = new FileSystem(inputBucketName, outputBucketName);
+	
 		
 		lock = new Object();
 		serverNumber = Integer.parseInt(args[0]);
@@ -251,7 +254,7 @@ public class Server implements Runnable {
 		for (String fileName : fileNameList){
 			try {
 //				S3FileReader s3fr = new S3FileReader(bucketName, fileName);
-				serverDataRecords.addAll(MRFS.readRecordsFrom(bucketName, fileName));
+				serverDataRecords.addAll(MRFS.readInputDataRecordsFromInputBucket(inputBucketName, fileName));
 				
 			} catch (Exception e) {
 				System.err.println("SERVER : Stage 1 Sorting : unable to read file");
@@ -484,9 +487,18 @@ public class Server implements Runnable {
 			
 				Collections.sort(serverDataRecordsCache);
 				System.out.println("Global Sorted Partition: " + serverDataRecordsCache);
+				
+				// All data records on this server are now sorted and need to be written out as part files to S3
+				
+				// TODO: output bucketname
+				String outputBucketName = "";
+				
 				for (DataRecord dr : serverDataRecordsCache){
 					System.out.println("> " + dr.getSortValue());
 				}
+
+				MRFS.writePartsToOutputBucket(serverDataRecordsCache, serverNumber, outputBucketName);
+				
 			}
 			
 			

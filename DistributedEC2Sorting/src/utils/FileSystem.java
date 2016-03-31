@@ -1,14 +1,19 @@
 package utils;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -24,6 +29,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.jcraft.jsch.ChannelSftp;
@@ -39,15 +45,21 @@ public class FileSystem {
 	
 	private class Constants {
 		private static final String PEM_FILE_PATH = "credentials/MyKeyPair.pem";
+		public static final String PUBLIC_DNS_FILE = "publicDnsFile.txt";
 		public static final String EC2_USERNAME = "ubuntu";
 		public static final int SSH_PORT = 22;
-		public static final String SAMPLESORT_PART_TEMP = "sampleSortPartTemp";
+
+		public static final String SAMPLESORT_PART_TEMP_FOLDER = "sampleSortPartTemp";
 		public static final String SAMPLESORT_MY_PART = "~/Project/sampleSortMyParts";
-		public static final String SAMPLESORT_MY_PART_RELATIVE = "sampleSortMyParts";
-		public static final String PUBLIC_DNS_FILE = "publicDnsFile.txt";
+		public static final String SAMPLESORT_MY_PART_RELATIVE_FOLDER = "sampleSortMyParts";
+		
+		public static final String S3_OUTPUT_PART_TEMP_FILE = "s3OutputPartTemp";
+		public static final String MyS3BucketOuputPart_DistributedEC2Sort_FOLDER = "DistributedEC2Sort";
+		
 	}
 	
-	String bucketName;
+	String inputBucketName;
+	String outputBucketName;
 	String fileObjectKey;
 	ArrayList<String> fileNameSizeList_GLOBAL;
 	static AWSCredentials credentials;
@@ -56,13 +68,14 @@ public class FileSystem {
 	// EC2 Specific data
 	public static HashMap<Integer, String> serverIPaddrMap;
 	
-	public FileSystem(String bucketName) throws IOException{
-		this.bucketName = bucketName;
+	public FileSystem(String inputBucketName, String outputBucketName) throws IOException{
+		this.inputBucketName = inputBucketName;
+		this.outputBucketName = outputBucketName;
 		this.fileNameSizeList_GLOBAL = new ArrayList<String>();
 		
 		credentials = new ProfileCredentialsProvider().getCredentials();
 		s3client = new AmazonS3Client(credentials);
-		ObjectListing objList = s3client.listObjects(bucketName);
+		ObjectListing objList = s3client.listObjects(inputBucketName);
 	
 		// EC2 specific
 		serverIPaddrMap = new HashMap<Integer, String>();
@@ -78,11 +91,14 @@ public class FileSystem {
 				this.fileNameSizeList_GLOBAL.add(objSum.getKey() + ":" + objSum.getSize());
 				debug_limitCount++;
 			}
-			if(debug_limitCount == 6) {break;}
+			if(debug_limitCount == 10) {break;}
 		}
 		
 	}
 	
+	public FileSystem() {
+	}
+
 	/**
 	 * Constructor helper to read IPs of all servers into Map
 	 * @throws IOException 
@@ -105,7 +121,7 @@ public class FileSystem {
 	 * 
 	 ****************************************************************/
 	
-	public static ArrayList<DataRecord> readRecordsFrom(String bucketName, String fileObjectKey){
+	public static ArrayList<DataRecord> readInputDataRecordsFromInputBucket(String inputBucketName, String fileObjectKey){
 	
 		ArrayList<DataRecord> dataRecordList = new ArrayList<DataRecord>();
 		
@@ -113,7 +129,7 @@ public class FileSystem {
 			
 			AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 			AmazonS3 s3client = new AmazonS3Client(credentials);
-			S3Object s3object = s3client.getObject(new GetObjectRequest(bucketName, fileObjectKey));
+			S3Object s3object = s3client.getObject(new GetObjectRequest(inputBucketName, fileObjectKey));
 			GZIPInputStream gzipStream = new GZIPInputStream(s3object.getObjectContent());
 			Reader decoder = new InputStreamReader(gzipStream, "ASCII");
 			BufferedReader buffered = new BufferedReader(decoder);
@@ -129,7 +145,7 @@ public class FileSystem {
 			// TODO: REMOVE AFTER DEBUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			
 			// TODO: remove count condition to read all file
-			while((fileLine = buffered.readLine())!=null && count < 5){
+			while((fileLine = buffered.readLine())!=null && count < 10){
 				
 				// TODO: read line > csv > get offsets > get value > make DataRecord and return list
 
@@ -202,18 +218,18 @@ public class FileSystem {
 	 * */
 
 	public static void writeToEC2(List<DataRecord> drsPartListToBeWritten, int serverNumber_p, int fromServer_s) throws IOException, JSchException, SftpException {
-		String fileName = Constants.SAMPLESORT_PART_TEMP+"/s"+fromServer_s+"p"+serverNumber_p+".txt";
+		String fileName = Constants.SAMPLESORT_PART_TEMP_FOLDER+"/s"+fromServer_s+"p"+serverNumber_p+".txt";
 			
 		System.out.println("FileSystem : writeToEC2 : begin writing to local EC2 : " + fileName);
 		
 		File f = null;
-		f = new File(Constants.SAMPLESORT_PART_TEMP);
+		f = new File(Constants.SAMPLESORT_PART_TEMP_FOLDER);
 		f.mkdir();
 		
 		System.out.println("f.mkdir for " + fileName);
 		
 		System.out.println("test reading folders");
-		File folderIn1 = new File(Constants.SAMPLESORT_PART_TEMP+"/");
+		File folderIn1 = new File(Constants.SAMPLESORT_PART_TEMP_FOLDER+"/");
 		
 		for(File partFile : folderIn1.listFiles()){
 			System.out.println("folder: " + partFile.getName());
@@ -243,10 +259,10 @@ public class FileSystem {
 	private static void writeToLocalOfOtherServer(int serverNumber_p, int fromServer_s) throws SocketException, IOException, JSchException, SftpException {
 		
 		System.out.println("FileSystem : writeToLocalOfOtherServer : begin : ip " + serverIPaddrMap.get(serverNumber_p));
-		System.out.println("FileSystem : src : " + Constants.SAMPLESORT_PART_TEMP + "/s" + fromServer_s + "p" + serverNumber_p 
+		System.out.println("FileSystem : src : " + Constants.SAMPLESORT_PART_TEMP_FOLDER + "/s" + fromServer_s + "p" + serverNumber_p 
 				+ ".txt" + " destfolder: "	+ Constants.SAMPLESORT_MY_PART);
 		
-		scpCopy(Constants.SAMPLESORT_PART_TEMP+"/s"+fromServer_s+"p"+serverNumber_p+".txt", 
+		scpCopy(Constants.SAMPLESORT_PART_TEMP_FOLDER+"/s"+fromServer_s+"p"+serverNumber_p+".txt", 
 				Constants.SAMPLESORT_MY_PART,
 				serverIPaddrMap.get(serverNumber_p));
 		// copy from sample sort parts temp TO sample sort my parts of other server
@@ -294,7 +310,7 @@ public class FileSystem {
 		
 		ArrayList<DataRecord> myDataRecordList = new ArrayList<DataRecord>();
 		
-		File folderIn = new File(Constants.SAMPLESORT_MY_PART_RELATIVE+"/");
+		File folderIn = new File(Constants.SAMPLESORT_MY_PART_RELATIVE_FOLDER+"/");
 
 		System.out.println("Folder In : " + folderIn);
 		
@@ -317,12 +333,107 @@ public class FileSystem {
 		return myDataRecordList;
 	}
 
-	public static HashMap<Integer, String> getServerIPaddrMap() {
-		return serverIPaddrMap;
+	/**
+	 * This method writes the part file, in the format as required 
+	 * 			wban #, date, time, and temperature
+	 * 
+	 * This should be noted when reading this file.
+	 * 
+	 * 1. The file is first written to local disk. 
+	 * 2. Then it is copied to the output S3 bucket.
+	 * 3. The temp file is then deleted from local disk.
+	 * 
+	 * Function used in Server.java at the end of complete sort
+	 * */
+	public void writePartsToOutputBucket(List<DataRecord> sortedDataRecords, int fromServerNumber) throws IOException {
+		// 1. make temp file
+		File tempFileToDelete = new File(Constants.S3_OUTPUT_PART_TEMP_FILE);
+		BufferedWriter bufWriter = new BufferedWriter(new FileWriter(tempFileToDelete));
+		
+		for(DataRecord drToWrite : sortedDataRecords){
+			String[] fields = drToWrite.readRecord(this.inputBucketName).split(",");
+			
+			String wban = DataFileParser.getValueOf(fields, DataFileParser.Field.WBAN_NUMBER);
+			String date = DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY);
+			String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
+			String dryBulbTemp = DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP);
+			
+			String outputInRequiredFormat = wban + ", " + date + ", " + time + ", " + dryBulbTemp;
+			
+			bufWriter.write(outputInRequiredFormat);
+		}
+		
+		// 2. write to S3 bucket
+		String serverNum = fromServerNumber+"";
+		String fileNameOnS3Bucket = Constants.MyS3BucketOuputPart_DistributedEC2Sort_FOLDER
+										+"/part-"+("00000" + serverNum).substring(serverNum.length());
+		s3client.putObject(new PutObjectRequest(this.outputBucketName, fileNameOnS3Bucket, tempFileToDelete));;
+		
+		// 3. close streams and delete temp file
+		bufWriter.close();
+		tempFileToDelete.delete();
 	}
 
-	public static void setServerIPaddrMap(HashMap<Integer, String> serverIPaddrMap) {
-		FileSystem.serverIPaddrMap = serverIPaddrMap;
+	
+	/**
+	 * Read output part files stored in DistributedEC2Sort folder from output S3 bucket
+	 * 
+	 * 1. find list of part files under the folder DistributedEC2Sort
+	 * 2. read the strings
+	 * 3. display topX number of data records from that part
+	 * 
+	 * This function could be called from the Client.java class, after all the
+	 * servers have finished the sample sort, and written the parts to a common
+	 * S3 bucket folder (using the method writePartsToOutputBucket above)
+	 * */
+	
+	public static void printFinalOutputPartFiles(String outputBucketName, int topX){
+
+		
+		ArrayList<DataRecord> dataRecordList = new ArrayList<DataRecord>();
+		
+		try {
+			
+			AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+			AmazonS3 s3client = new AmazonS3Client(credentials);
+			ObjectListing objList = s3client.listObjects(outputBucketName);
+			
+			for(S3ObjectSummary objSum : objList.getObjectSummaries() ){
+				if(objSum.getKey().contains(Constants.MyS3BucketOuputPart_DistributedEC2Sort_FOLDER + "part-")){
+					System.out.println("FILE: " + objSum.getKey());
+					
+					String fileToRead = objSum.getKey();
+					S3Object partObj = s3client.getObject(new GetObjectRequest(outputBucketName,fileToRead));
+					
+					BufferedReader partBR = new BufferedReader(new InputStreamReader(partObj.getObjectContent()));
+					
+					int count = 0;
+					String line;
+					while(null != (line = partBR.readLine()) && count < topX){
+						System.out.println(line);
+						count++;
+					}
+					
+					partBR.close();
+					partObj.close();
+				}
+			}
+			
+			
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			System.out.println("Unable to read file while converting to DataRecord");
+			e.printStackTrace();
+		}
+		
+	}
+	
+	
+	// Getters and Setters
+	
+	public static HashMap<Integer, String> getServerIPaddrMap() {
+		return serverIPaddrMap;
 	}
 
 }

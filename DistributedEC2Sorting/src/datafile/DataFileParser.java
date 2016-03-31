@@ -7,6 +7,9 @@ public class DataFileParser {
 
 	public class Field{
 		public static final String DRY_BULB_TEMP = "DryBulbTemp";
+		public static final String WBAN_NUMBER = "WbanNumber";
+		public static final String YEARMONTHDAY = "YearMonthDay";
+		public static final String TIME = "Time";
 	}
 	
 	public static final String[] csvh = {"WbanNumber","YearMonthDay","Time","StationType",

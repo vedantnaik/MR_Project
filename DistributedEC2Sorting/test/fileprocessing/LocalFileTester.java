@@ -33,26 +33,26 @@ public class LocalFileTester  {
 //		ObjectOutputStream oos = new ObjectOutputStream(fout);
 //		oos.writeObject(drListFor199703);
 		
-		
-		File folderIn = new File(fromServer_s+"/");
-		
+		int count = 0;
+		File folderIn = new File("sampleSortMyParts/");
 		
 		for(File partFile : folderIn.listFiles()){
 			
-			if(partFile.getName().contains("p"+serverNumber_p)){
+			System.out.println("file : " + partFile.getName());
+			FileInputStream fileStream = new FileInputStream(folderIn+"/"+partFile.getName());
+			ObjectInputStream ois = new ObjectInputStream(fileStream);
+			ArrayList<DataRecord> drList = (ArrayList<DataRecord>) ois.readObject();
 			
-				System.out.println("file : " + partFile.getName());
-				FileInputStream fileStream = new FileInputStream(folderIn+"/"+partFile.getName());
-				ObjectInputStream ois = new ObjectInputStream(fileStream);
-				ArrayList<DataRecord> drList = (ArrayList<DataRecord>) ois.readObject();
-				
-				for(DataRecord dr : drList){
-					System.out.println("====================");
-					System.out.println(dr.getSortValue());
-				}
+			for(DataRecord dr : drList){
+				System.out.println("====================");
+				System.out.println(dr.getSortValue());
+				count++;
 			}
 		}
 		
+		
+		
+		System.out.println("All count : " + count);
 	}
 	
 }

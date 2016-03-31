@@ -56,7 +56,6 @@ public class S3FileReader {
 		this.s3FileReader.skip(fromChar);
 		this.s3FileReader.read(cbuf, 0, recordLength);
 		
-		// TODO: find a better approach to make the file reader go back to the first position
 		this.s3FileReader = new S3FileReader(this.bucketName, this.fileObjectKey).getS3FileReader();
 		
 		return new String(cbuf);
