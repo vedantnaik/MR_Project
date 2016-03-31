@@ -276,10 +276,10 @@ public class FileSystem {
 		    System.out.println("local file name : " + fsrc + " localFile " + localFile.getName());
 		   
 		    //If you want you can change the directory using the following line.
-//		    channel.cd("sampleSortMyParts");
+//		    channel.cd("Project");
 		    System.out.println("pwd " + channel.pwd());
 		    System.out.println("sampleSortPartTemp/"+localFile.getName() + " ::  " + "sampleSortMyParts/");
-		    channel.put("sampleSortPartTemp/"+localFile.getName() , "sampleSortMyParts/");
+		    channel.put("sampleSortPartTemp/"+localFile.getName() , "Project/sampleSortMyParts/"+localFile.getName());
 		    
 		    channel.disconnect();
 		session.disconnect();
@@ -294,7 +294,7 @@ public class FileSystem {
 		
 		ArrayList<DataRecord> myDataRecordList = new ArrayList<DataRecord>();
 		
-		File folderIn = new File(Constants.SAMPLESORT_MY_PART+"/");
+		File folderIn = new File(Constants.SAMPLESORT_MY_PART_RELATIVE+"/");
 
 		System.out.println("Folder In : " + folderIn);
 		

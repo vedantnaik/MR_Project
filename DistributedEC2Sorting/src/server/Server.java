@@ -267,7 +267,8 @@ public class Server implements Runnable {
 		List<Double> pivArray = new ArrayList<Double>(1000);
 
 		System.out.println("serverDataRecords size " + serverDataRecords.size());
-		for (int i = 0; i < serverDataRecords.size() ; i += numberOfProcessors) {
+		int interval = serverDataRecords.size() / numberOfProcessors;
+		for (int i = numberOfProcessors; i < serverDataRecords.size() ; i += interval) {
 			System.out.println("Adding ");
 			pivArray.add(serverDataRecords.get(i).getSortValue());
 			System.out.println("added " + serverDataRecords.get(i).getSortValue());
@@ -318,7 +319,8 @@ public class Server implements Runnable {
 
 			List<Double> pivArray = new ArrayList<Double>();
 
-			for (int i = (numberOfProcessors - 1); i < serverDataRecordPivotValuesList.size(); i += (numberOfProcessors - 1)) {
+			for (int i = numberOfProcessors; i < serverDataRecordPivotValuesList.size() ;
+					 i += numberOfProcessors) {
 				pivArray.add(serverDataRecordPivotValuesList.get(i));
 			}
 
@@ -455,7 +457,7 @@ public class Server implements Runnable {
 
 // TODO:
 				
-				
+				System.out.println("serverDataRecordsCache " + serverDataRecordsCache);
 				// read my parts file
 				
 				serverDataRecordsCache.addAll(MRFS.readMyParts(serverNumber));
