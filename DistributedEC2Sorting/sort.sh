@@ -1,8 +1,11 @@
 #!/bin/bash
+source script.cfg
+echo "the bucket that will be created"
+echo $bucketName
 columnName=$1
 input=$2
 output=$3
-
+aws s3 mb s3://$bucketName
 # the file that contains the public DNS addresses of the linux boxes that we just started
 FILE=publicDnsFile.txt
 
@@ -12,7 +15,9 @@ FILE=publicDnsFile.txt
 # lines in the file that we are reading from
 # IMPORTANT: We will be runnning the java program on each instance, so we dont wait for one program to
 # complete and exit
-comds="cd ~/test/; javac Hello.java; time java Hello"
+comds="cd ~/test/; cat ~/Project/publicDnsFile.txt; javac Hello.java; time java Hello"
+comdsserver="cd ~/Project; java -cp DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server 0 cs6240sp16 > ~/Project/log.txt &"
+#comdsclient="cd ~/Project; java -cp DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server 0 cs6240sp16 > ~/Project/log.txt &"
 i=0
 server="not decided"
 while read line;do
@@ -20,17 +25,22 @@ while read line;do
         echo $i
         if [ $i -eq 0 ]; then
         	server=$line
-        	echo $line" is the server instance"
+        	echo $line" is the master instance"
+                ssh -i MyKeyPair.pem ubuntu@$line -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "${comdsserver}" < /dev/null &
         else
-        	echo "client instance"
+        	echo "slave instance"
+                ssh -i MyKeyPair.pem ubuntu@$line -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "cd ~/Project; java -cp DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server $i cs6240sp16 > ~/Project/log.txt &" < /dev/null &
         fi
-        ssh -i MyKeyPair.pem ubuntu@$line -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "${comds}" < /dev/null &
         i=$((i+1))
 done < $FILE
-
+echo "master instance was "$server
+sleep 10s
+java -cp DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar client.Client cs6240sp16 $bucketName
 # since we started the programs simultaneously, we will wait for the two of them to complete after this step
 wait
-echo "server instance was "$server
 echo "reached the end of sort script"
 echo "exiting sort script"
+# uncomment if you wish to download the output to your computer
+echo "Downloading the output from the s3 bucket to your computer"
+echo aws s3 sync s3://<BUCKET_NAME>/outputSampleSort output/
 exit

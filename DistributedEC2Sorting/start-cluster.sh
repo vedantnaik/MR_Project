@@ -23,6 +23,18 @@ echo "length :: "
 echo $tLen
 host="ubuntu@"${instance_idArray[0]}
 
+# we need to ensure that a copy of the public DNS addresses of all the nodes that have just started needs to be on each
+# instance, and hence we create this file before everything else
+for (( m=0; m<${tLen}; m++ ));
+do
+	echo ${instance_idArray[m]}
+	echo ${instance_idArray[m]} >> publicDnsFile.txt
+done
+
+
+# creating the jar
+mvn clean compile assembly:single
+cp target/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar .
 # the list of commands that install Java on the instance and sets up the environment
 # The java version that we are installing is 1.7
 comds="sudo add-apt-repository -y ppa:webupd8team/java; sudo apt-get update; yes | sudo apt-get install -y oracle-java7-installer; sudo apt-get install oracle-java7-set-default; which java; mkdir ~/.aws; mkdir ~/test; mkdir ~/Project; mkdir ~/Project/sampleSortMyParts; mkdir ~/Project/credentials; ls ~/; ls ~/Project"
@@ -76,16 +88,19 @@ do
 	echo "trying to log the ssh return code..."
 	echo $?
 	echo "transferring the jar file to the linux instance"
-	scp -i /Users/rohanjoshi/Documents/MyKeyPair.pem -o stricthostkeychecking=no MyKeyPair.pem ubuntu@${instance_idArray[i]}:~/Project/credentials
-	scp -i /Users/rohanjoshi/Documents/MyKeyPair.pem -o stricthostkeychecking=no Hello.java ubuntu@${instance_idArray[i]}:~/test
+	scp -i MyKeyPair.pem -o stricthostkeychecking=no MyKeyPair.pem ubuntu@${instance_idArray[i]}:~/Project/credentials
+	scp -i MyKeyPair.pem -o stricthostkeychecking=no publicDnsFile.txt ubuntu@${instance_idArray[i]}:~/Project
+	scp -i MyKeyPair.pem -o stricthostkeychecking=no Hello.java ubuntu@${instance_idArray[i]}:~/test
+	scp -i MyKeyPair.pem -o stricthostkeychecking=no credentials ubuntu@${instance_idArray[i]}:~/.aws
+	scp -i MyKeyPair.pem -o stricthostkeychecking=no DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar ubuntu@${instance_idArray[i]}:~/Project
 	echo "writing the ip to a file"
 	ip=`aws ec2 describe-instances --filters "Name=dns-name,Values=${instance_idArray[i]}" | jq -r ".Reservations[].Instances[].PublicIpAddress"`
 	echo $ip >> ipAddresses.txt
 	echo "writing the public dns to a file"
-	echo ${instance_idArray[i]} >> publicDnsFile.txt
+	#echo ${instance_idArray[i]} >> publicDnsFile.txt
 done
 
 echo "ssh and installation complete"
 totalCountStarted="started "$nodeCount
-echo "started $totalCountStarted nodes"
+echo "$totalCountStarted nodes"
 # call sort
