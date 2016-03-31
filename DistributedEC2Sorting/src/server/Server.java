@@ -111,7 +111,7 @@ public class Server implements Runnable {
 		
 		
 		inputBucketName = args[1];
-		
+		outputBucketName = args[2];
 		MRFS = new FileSystem(inputBucketName, outputBucketName);
 	
 		
@@ -490,14 +490,12 @@ public class Server implements Runnable {
 				
 				// All data records on this server are now sorted and need to be written out as part files to S3
 				
-				// TODO: output bucketname
-				String outputBucketName = "";
 				
 				for (DataRecord dr : serverDataRecordsCache){
 					System.out.println("> " + dr.getSortValue());
 				}
 
-				MRFS.writePartsToOutputBucket(serverDataRecordsCache, serverNumber, outputBucketName);
+				MRFS.writePartsToOutputBucket(serverDataRecordsCache, serverNumber);
 				
 			}
 			
