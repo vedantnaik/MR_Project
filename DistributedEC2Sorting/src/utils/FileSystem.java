@@ -168,7 +168,7 @@ public class FileSystem {
 					double dryBulbTemp = Double.parseDouble(DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP));
 					
 //					System.out.println("=========================================================");
-					System.out.println("read record \t\t" + dryBulbTemp);
+//					System.out.println("read record \t\t" + dryBulbTemp);
 //					System.out.println("=========================================================");
 					
 					dataRecordList.add(new DataRecord(fileObjectKey, offset, fileLine.length(), dryBulbTemp));

@@ -28,7 +28,7 @@ import datafile.DataRecord;
 public class Server implements Runnable {
 	private Socket connection = null;
 	static ServerSocket serverSocket = null;
-//	static int[] ports = { 1210, 1211, 1212 };
+
 	static int port = 1210;
 	static int numberOfProcessors = 0;
 	static int serverNumber = 0;
@@ -41,26 +41,12 @@ public class Server implements Runnable {
 	private static List<Double> globalDataRecordPivotValuesList = new ArrayList<Double>(1000);
 	private static List<Double> stage5ReadDataRecordList = new ArrayList<Double>(1000);
 	
-//	private static List<Integer> mypivsArray = new ArrayList<>();
-//	private static List<Integer> serverPivsArray = new ArrayList<>();
-//	private static List<Integer> globalPivots = new ArrayList<>();
-//	private static List<Integer> mypartInts = new ArrayList<>();
-	
 	private static boolean distributePivotON = false;
 	private static boolean globalPivotON = false;
 	private static boolean mypartON = false;
 	private static boolean receivingMyPartitionON = false;
 	static Object lock;
-	// for now
-//	private static String serverIP; // = "127.0.0.1";
 
-//	private static DataOutputStream outDist[] = { null, null, null };
-//	private static Socket[] sendingSocketDist = { null, null, null };
-
-//	private static List<Integer> myInts = new ArrayList<>();
-//	private static List<Integer> myInts2 = new ArrayList<>();
-	
-	
 	// List of Sockets and OutputStream
 	private static Map<Integer, DataOutputStream> outDist = null;
 	private static Map<Integer, Socket> sendingSocketDist = null;
@@ -247,20 +233,23 @@ public class Server implements Runnable {
 
 	
 	private void stage1_sort_my_partition() {
-		
+		System.out.println("Stage1 sort my partition");
 		// TODO: later make this in threads
 
 		for (String fileName : fileNameList){
 			try {
 //				S3FileReader s3fr = new S3FileReader(bucketName, fileName);
-				serverDataRecords.addAll(MRFS.readInputDataRecordsFromInputBucket(inputBucketName, fileName));
+				System.out.println("reading file " + fileName);
+				serverDataRecords.addAll(FileSystem.readInputDataRecordsFromInputBucket(inputBucketName, fileName));
 				
 			} catch (Exception e) {
 				System.err.println("SERVER : Stage 1 Sorting : unable to read file");
 				e.printStackTrace();
 			}
 		}
+		System.out.println("Sorting stage1");
 		Collections.sort(serverDataRecords);
+		System.out.println("Sorted stage1");
 	}
 
 	private void stage2_select_my_pivots() throws IOException {

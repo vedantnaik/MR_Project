@@ -20,11 +20,8 @@ import utils.FileSystem;
  */
 public class Client {
 	
-//	static int[] ports = { 1210, 1211, 1212 };
+
 	static int port = 1210;
-//	Socket[] sendingSocket = { null, null, null };
-//	DataOutputStream[] out = { null, null, null };
-//	BufferedReader[] inFromServer = { null, null, null };
 	
 	private static Map<Integer, DataOutputStream> out = null;
 	private static Map<Integer, Socket> sendingSocket = null;
@@ -43,13 +40,16 @@ public class Client {
 			inFromServer = new HashMap<>(2 * totalServers);
 			System.out.println("servers are " + servers);
 			for (int i = 0; i < totalServers; i++) {
-//				if (out.get(i) == null) {
+
 					sendingSocket.put(i, new Socket(servers.get(i), port));
+					Socket socketTmp = sendingSocket.get(i);
+					socketTmp.setSoTimeout(0);
+					sendingSocket.put(i, socketTmp);
 					out.put(i, new DataOutputStream(sendingSocket
 							.get(i).getOutputStream()));
 					inFromServer.put(i ,new BufferedReader(new InputStreamReader(
 					sendingSocket.get(i).getInputStream())));
-//				}
+
 			}
 		} catch (IOException e) {
 			System.out.println("Unable to connect to all servers!");
@@ -75,7 +75,7 @@ public class Client {
 		FileSystem myS3FS = new FileSystem(inputBucketName, outputBucketName);
 		
 		HashMap<Integer, ArrayList<String>> partsMap = myS3FS.getS3Parts(totalServers); 
-		System.out.println("Map Parts " + partsMap);
+
 		try {
 
 			for (int i = 0; i < totalServers; i++) {
