@@ -4,16 +4,13 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -27,9 +24,13 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.GroupGrantee;
 import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.jcraft.jsch.ChannelSftp;
@@ -64,7 +65,7 @@ public class FileSystem {
 	ArrayList<String> fileNameSizeList_GLOBAL;
 	static AWSCredentials credentials;
 	static AmazonS3 s3client;
-	
+	static AccessControlList acl;
 	// EC2 Specific data
 	public static HashMap<Integer, String> serverIPaddrMap;
 	
@@ -75,6 +76,11 @@ public class FileSystem {
 		
 		credentials = new ProfileCredentialsProvider().getCredentials();
 		s3client = new AmazonS3Client(credentials);
+		
+		// adding permissions
+		acl = new AccessControlList();
+		acl.grantPermission(GroupGrantee.AllUsers, Permission.Read);
+		
 		ObjectListing objList = s3client.listObjects(inputBucketName);
 	
 		// EC2 specific
@@ -84,14 +90,14 @@ public class FileSystem {
 		///////////////////////////////////////////////
 		// TODO: REMOVE AFTER DEBUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		
-		int debug_limitCount = 0;
+//		int debug_limitCount = 0;
 		
 		for(S3ObjectSummary objSum : objList.getObjectSummaries() ){
 			if(objSum.getKey().contains("climate") && objSum.getKey().contains("txt.gz")){
 				this.fileNameSizeList_GLOBAL.add(objSum.getKey() + ":" + objSum.getSize());
-				debug_limitCount++;
+//				debug_limitCount++;
 			}
-			if(debug_limitCount == 10) {break;}
+//			if(debug_limitCount == 10) {break;}
 		}
 		
 	}
@@ -145,7 +151,7 @@ public class FileSystem {
 			// TODO: REMOVE AFTER DEBUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			
 			// TODO: remove count condition to read all file
-			while((fileLine = buffered.readLine())!=null && count < 10){
+			while((fileLine = buffered.readLine())!=null /*&& count < 10*/){
 				
 				// TODO: read line > csv > get offsets > get value > make DataRecord and return list
 
@@ -161,9 +167,9 @@ public class FileSystem {
 					
 					double dryBulbTemp = Double.parseDouble(DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP));
 					
-					System.out.println("=========================================================");
+//					System.out.println("=========================================================");
 					System.out.println("read record \t\t" + dryBulbTemp);
-					System.out.println("=========================================================");
+//					System.out.println("=========================================================");
 					
 					dataRecordList.add(new DataRecord(fileObjectKey, offset, fileLine.length(), dryBulbTemp));
 				}
@@ -346,32 +352,48 @@ public class FileSystem {
 	 * Function used in Server.java at the end of complete sort
 	 * */
 	public void writePartsToOutputBucket(List<DataRecord> sortedDataRecords, int fromServerNumber) throws IOException {
-		// 1. make temp file
-		File tempFileToDelete = new File(Constants.S3_OUTPUT_PART_TEMP_FILE);
-		BufferedWriter bufWriter = new BufferedWriter(new FileWriter(tempFileToDelete));
-		
-		for(DataRecord drToWrite : sortedDataRecords){
-			String[] fields = drToWrite.readRecord(this.inputBucketName).split(",");
+		try{
+			// 1. make temp file
+			File tempFileToDelete = new File(Constants.S3_OUTPUT_PART_TEMP_FILE);
+			BufferedWriter bufWriter = new BufferedWriter(new FileWriter(tempFileToDelete));
 			
-			String wban = DataFileParser.getValueOf(fields, DataFileParser.Field.WBAN_NUMBER);
-			String date = DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY);
-			String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
-			String dryBulbTemp = DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP);
+			System.out.println("writePartsToOutputBucket enter " + sortedDataRecords.size());
+			for(DataRecord drToWrite : sortedDataRecords){
+				String[] fields = drToWrite.readRecord(this.inputBucketName).split(",");
+				
+				String wban = DataFileParser.getValueOf(fields, DataFileParser.Field.WBAN_NUMBER);
+				String date = DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY);
+				String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
+				String dryBulbTemp = DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP);
+				
+				String outputInRequiredFormat = wban + ", " + date + ", " + time + ", " + dryBulbTemp + "\n";
+				
+				System.out.println("writing " + outputInRequiredFormat);
+				bufWriter.write(outputInRequiredFormat);
+			}
+			// 3. close streams and delete temp file
+			bufWriter.close();
+
+			System.out.println("writePartsToOutputBucket written to file " + tempFileToDelete.getName());
+			// 2. write to S3 bucket
+			String serverNum = fromServerNumber+"";
+			String fileNameOnS3Bucket = Constants.MyS3BucketOuputPart_DistributedEC2Sort_FOLDER
+											+"/part-"+("00000" + serverNum).substring(serverNum.length());
 			
-			String outputInRequiredFormat = wban + ", " + date + ", " + time + ", " + dryBulbTemp;
-			
-			bufWriter.write(outputInRequiredFormat);
+			System.out.println("writePartsToOutputBucket moving to s3 " + outputBucketName);
+			PutObjectResult result = s3client.putObject(new PutObjectRequest(this.outputBucketName, 
+					fileNameOnS3Bucket, tempFileToDelete).withAccessControlList(acl));
+			System.out.println("result1 " + result);			
+						
+			System.out.println("writePartsToOutputBucket moved to s3");
+
+			// later uncomment
+//			tempFileToDelete.delete();
 		}
-		
-		// 2. write to S3 bucket
-		String serverNum = fromServerNumber+"";
-		String fileNameOnS3Bucket = Constants.MyS3BucketOuputPart_DistributedEC2Sort_FOLDER
-										+"/part-"+("00000" + serverNum).substring(serverNum.length());
-		s3client.putObject(new PutObjectRequest(this.outputBucketName, fileNameOnS3Bucket, tempFileToDelete));;
-		
-		// 3. close streams and delete temp file
-		bufWriter.close();
-		tempFileToDelete.delete();
+		catch(Exception e){
+			System.out.println("failure in writePartsToOutputBucket");
+			e.printStackTrace();
+		}
 	}
 
 	
@@ -381,7 +403,7 @@ public class FileSystem {
 	 * 1. find list of part files under the folder DistributedEC2Sort
 	 * 2. read the strings
 	 * 3. display topX number of data records from that part
-	 * 
+	 *  
 	 * This function could be called from the Client.java class, after all the
 	 * servers have finished the sample sort, and written the parts to a common
 	 * S3 bucket folder (using the method writePartsToOutputBucket above)
@@ -390,7 +412,7 @@ public class FileSystem {
 	public static void printFinalOutputPartFiles(String outputBucketName, int topX){
 
 		
-		ArrayList<DataRecord> dataRecordList = new ArrayList<DataRecord>();
+//		ArrayList<DataRecord> dataRecordList = new ArrayList<DataRecord>();
 		
 		try {
 			

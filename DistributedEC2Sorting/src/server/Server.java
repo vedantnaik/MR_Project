@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 import utils.FileSystem;
-import utils.S3FileReader;
 
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
@@ -103,7 +102,7 @@ public class Server implements Runnable {
 	}
 
 	public static void main(String args[]) throws Exception {
-		if (args.length != 2) {
+		if (args.length != 3) {
 			System.out.println("Syntax error: Include my Number");
 			System.out.println("Usage: Server <servernumber> <InputBucketName>");
 			System.exit(0);
@@ -321,10 +320,12 @@ public class Server implements Runnable {
 			System.out.println("Selecting global pivots");
 
 			List<Double> pivArray = new ArrayList<Double>();
-
-			for (int i = numberOfProcessors; i < serverDataRecordPivotValuesList.size() ;
-					 i += numberOfProcessors) {
+			int interval = serverDataRecordPivotValuesList.size() / numberOfProcessors;
+			int count = 1;
+			for (int i = interval; i < serverDataRecordPivotValuesList.size() && 
+					count < numberOfProcessors; i += interval) {
 				pivArray.add(serverDataRecordPivotValuesList.get(i));
+				count ++;
 			}
 
 			System.out.println("sending global pivots " + pivArray);
@@ -395,21 +396,21 @@ public class Server implements Runnable {
 
 //			int serverNumb = serverNumber;
 
-			for (int i = 1; i < 3; i++) {
+			for (int i = 1; i < totalServers; i++) {
 				// Write to ec2
 				
 				
 				
 				
-				String sendig = ""+ drsToBeSent.get((serverNumber + i) % 3);
+				String sendig = ""+ drsToBeSent.get((serverNumber + i) % totalServers);
 				sendig = sendig.replace("[", "").replace("]", "");
 				
 				System.out.println("Sending Partition from Server"
 						+ serverNumber + " to Server" + (serverNumber + i)
-						% 3 + " " + sendig);
-				outDist.get((serverNumber + i) % 3).writeBytes("mypart#start\n");
+						% totalServers + " " + sendig);
+				outDist.get((serverNumber + i) % totalServers).writeBytes("mypart#start\n");
 				
-				int sendToServerNumber = (serverNumber + i) % 3;
+				int sendToServerNumber = (serverNumber + i) % totalServers;
 				try {
 					MRFS.writeToEC2(drsToBeSent.get(sendToServerNumber), sendToServerNumber, serverNumber);
 				} catch (JSchException | SftpException e) {
@@ -417,7 +418,7 @@ public class Server implements Runnable {
 					e.printStackTrace();
 				}
 								
-				outDist.get((serverNumber + i) % 3).writeBytes("mypart#end\n");
+				outDist.get((serverNumber + i) % totalServers).writeBytes("mypart#end\n");
 			}
 			
 			
@@ -491,11 +492,11 @@ public class Server implements Runnable {
 				// All data records on this server are now sorted and need to be written out as part files to S3
 				
 				
+				MRFS.writePartsToOutputBucket(serverDataRecordsCache, serverNumber);
 				for (DataRecord dr : serverDataRecordsCache){
 					System.out.println("> " + dr.getSortValue());
 				}
 
-				MRFS.writePartsToOutputBucket(serverDataRecordsCache, serverNumber);
 				
 			}
 			

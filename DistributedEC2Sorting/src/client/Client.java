@@ -1,16 +1,13 @@
 package client;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import utils.FileSystem;
@@ -116,7 +113,7 @@ public class Client {
 				}
 
 			}
-			// 3 people replied
+			// totalServers people replied
 			System.out.println("replied array " + Arrays.toString(replied));
 
 			System.out.println("sending command to distribute now!");
@@ -165,7 +162,7 @@ public class Client {
 	 * @throws Exception
 	 */
 	public static void main(String args[]) throws Exception {
-		if (args.length != 1) {
+		if (args.length != 2) {
 			System.out
 					.println("Include Server IP Address. Currently only localhost!");
 			System.out.println("Usage Client <bucketname>");

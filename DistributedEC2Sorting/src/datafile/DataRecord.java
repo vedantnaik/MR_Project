@@ -1,16 +1,10 @@
 package datafile;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Serializable;
-import java.util.zip.GZIPInputStream;
 
-import utils.FileSystem;
 import utils.S3FileReader;
 
 /*
@@ -18,12 +12,13 @@ import utils.S3FileReader;
  * - file name in which it is located
  * - character offset of from the beginning of the file to the start of record
  * - length of the record
- * - value in the record which will be used to sort the dataset : value of “Dry Bulb Temp” field 
+ * - value in the record which will be used to sort the dataset : value of â€œDry Bulb Tempâ€� field 
  * */
 
 
 public class DataRecord implements Serializable, Comparable<DataRecord>{
 
+	private static final long serialVersionUID = 1L;
 	private String fileName;
 	private long fromChar;
 	private int recordLength;

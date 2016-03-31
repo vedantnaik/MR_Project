@@ -1,9 +1,5 @@
 package fileprocessing;
 
-import java.io.IOException;
-import java.net.SocketException;
-
-import utils.FileSystem;
 
 public class SCPTester {
 

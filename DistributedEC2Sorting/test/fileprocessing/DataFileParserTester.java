@@ -4,10 +4,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import datafile.DataFileParser;
-import datafile.DataRecord;
 import utils.FileSystem;
 import utils.S3FileReader;
+import datafile.DataRecord;
 
 public class DataFileParserTester {
 

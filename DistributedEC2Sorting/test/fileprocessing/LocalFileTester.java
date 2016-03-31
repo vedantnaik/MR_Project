@@ -2,14 +2,10 @@ package fileprocessing;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 import datafile.DataRecord;
-import utils.FileSystem;
-import utils.S3FileReader;
 
 public class LocalFileTester  {
 
