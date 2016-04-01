@@ -4,7 +4,7 @@ echo "the bucket that will be created"
 echo $bucketName
 
 bucketName="distributedsort"
-
+inputBucket="climatesort"
 columnName=$1
 input=$2
 output=$3
@@ -21,11 +21,11 @@ FILE=publicDnsFile.txt
 # lines in the file that we are reading from
 # IMPORTANT: We will be runnning the java program on each instance, so we dont wait for one program to
 # complete and exit
-comds="cd ~/Project; java -Xmx2048m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server $i cs6240sp16 $bucketName > log.txt"
-comds1="cd ~/Project; java -Xmx2048m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server "
-comds2="cs6240sp16 $bucketName > log.txt"
-comdsserver="rm -rf ~/Project/sampleSortPartTemp/; rm ~/Project/sampleSortMyParts/*;cd ~/Project; java -Xmx2048m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server 0 cs6240sp16 $bucketName > log.txt"
-#comdsclient="cd ~/Project; java -cp DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server 0 cs6240sp16 > ~/Project/log.txt &"
+comds="cd ~/Project; java -Xmx4096m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server $i $inputBucket $bucketName > log.txt"
+comds1="cd ~/Project; java -Xmx4096m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server "
+comds2="$inputBucket $bucketName > log.txt"
+comdsserver="rm -rf ~/Project/sampleSortPartTemp/; rm ~/Project/sampleSortMyParts/*;cd ~/Project; java -Xmx4096m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server 0 $inputBucket $bucketName > log.txt"
+#comdsclient="cd ~/Project; java -cp DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server 0 $inputBucket > ~/Project/log.txt &"
 i=0
 server="not decided"
 while read line;do
@@ -36,13 +36,13 @@ while read line;do
                 `ssh -i MyKeyPair.pem ubuntu@$line -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "${comdsserver}"` < /dev/null &
         else
         	echo "slave instance"
-                `ssh -i MyKeyPair.pem ubuntu@$line -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "rm -rf ~/Project/sampleSortPartTemp/; rm ~/Project/sampleSortMyParts/*;cd ~/Project; java -Xmx2048m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server $i cs6240sp16 $bucketName > log.txt"` < /dev/null &
+                `ssh -i MyKeyPair.pem ubuntu@$line -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "rm -rf ~/Project/sampleSortPartTemp/; rm ~/Project/sampleSortMyParts/*;cd ~/Project; java -Xmx4096m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server $i $inputBucket $bucketName > log.txt"` < /dev/null &
         fi
         i=$((i+1))
 done < $FILE
 echo "master instance was "$server
 sleep 10s
-java -cp DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar client.Client cs6240sp16 $bucketName
+java -cp DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar client.Client $inputBucket $bucketName
 # since we started the programs simultaneously, we will wait for the two of them to complete after this step
 wait
 echo "reached the end of sort script"

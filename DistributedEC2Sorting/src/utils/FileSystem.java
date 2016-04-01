@@ -331,7 +331,7 @@ public class FileSystem {
 					ObjectInputStream ois = new ObjectInputStream(fileStream);
 					
 					ArrayList<DataRecord> readList = (ArrayList<DataRecord>) ois.readObject();
-					System.out.println("read list " + readList + "");
+//					System.out.println("read list " + readList + "");
 					// TODO: MAKE MERGER
 					myDataRecordList.addAll(readList);
 					ois.close();
