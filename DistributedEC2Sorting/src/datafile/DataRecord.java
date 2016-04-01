@@ -12,7 +12,7 @@ import utils.S3FileReader;
  * - file name in which it is located
  * - character offset of from the beginning of the file to the start of record
  * - length of the record
- * - value in the record which will be used to sort the dataset : value of â€œDry Bulb Tempâ€� field 
+ * - value in the record which will be used to sort the dataset : value of Dry Bulb Temp field 
  * */
 
 
@@ -47,8 +47,8 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 
 	// DataRecord Methods
 	
-	/*
-	 * Read the complete record from the file system and return as a string..
+	/**
+	 * Read the complete record from the file system and return as a string.
 	 * */
 	public String readRecord(String bucketName){
 		String lineToRead="";
@@ -77,20 +77,24 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 		return lineToRead;
 	}
 
-	
-	/*
+	/**
 	 * Read the complete record from the file system and return as a string..
 	 * */
 	public String readRecordFrom(S3FileReader s3fr) throws IOException{
 		return s3fr.readFromOffsetToLen(this.fromChar, this.recordLength);
 	}
 	
-	
+	/**
+	 * Display string on console. Used for debugging.
+	 * */
 	@Override
 	public String toString() {
 		return "<"+this.getSortValue()+">";
 	}
 	
+	/**
+	 * Compare two DataRecord objects using sort value field
+	 * */
 	@Override
 	public int compareTo(DataRecord o) {
 		if(this.sortValue > o.getSortValue()) {return 1;}

@@ -13,11 +13,13 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 
+/**
+ * File reader for a file on a S3 bucket.
+ * */
 public class S3FileReader {
 
 	String bucketName;
 	String fileObjectKey;
-	
 	Reader s3FileReader;
 	
 	public S3FileReader(String bucketName, String fileObjectKey) throws IOException {
@@ -36,19 +38,6 @@ public class S3FileReader {
 		credentials = null;
 	}
 	
-	/*
-	 * Get list of all buckets:
-	  	for (Bucket bucket : s3client.listBuckets()) {
-			System.out.println(" - " + bucket.getName());
-		}
-	 * 
-	 * Create Bucket:
-	 	String bucketName = "javatutorial-net-example-bucket";
-		s3client.createBucket(bucketName);
-	 * 
-	 * For more snippets: https://javatutorial.net/java-s3-example
-	 * */
-	
 	public String readFromOffsetToLen(long fromChar, int recordLength) throws IOException {
 		char[] cbuf = new char[1000];
 		
@@ -60,21 +49,7 @@ public class S3FileReader {
 		return new String(cbuf);
 	}	
 		
-	
-	
-	public String readTillEof() throws IOException{
-		
-		
-		// TODO: find a better approach to make the file reader go back to the first position
-		S3FileReader tempClass = new S3FileReader(this.bucketName, this.fileObjectKey);
-		this.s3FileReader = tempClass.getS3FileReader();
-		tempClass = null;
-		
-		return null;
-	}
-	
-	
-	
+	// Getters and Setters
 	
 	public String getBucketName() {
 		return bucketName;
@@ -99,6 +74,4 @@ public class S3FileReader {
 	public void setS3FileReader(Reader s3FileReader) {
 		this.s3FileReader = s3FileReader;
 	}
-
-	
 }

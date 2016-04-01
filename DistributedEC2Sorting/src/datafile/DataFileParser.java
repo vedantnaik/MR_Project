@@ -19,8 +19,9 @@ public class DataFileParser {
 			"SeaLevelPressure","RecordType","PrecipTotal" };
 	public static final ArrayList<String> csvHeaders = new ArrayList<String>(Arrays.asList(csvh));
 
-	
-	// TODO: add sanity checks
+	/**
+	 * check if the record contains the DryBulbTemp value, which is needed for sorting
+	 * */
 	public static boolean isRecordValid(String[] fields){
 		if(fields.length != 21){
 			return false;
@@ -42,6 +43,9 @@ public class DataFileParser {
 		return true;
 	}
 	
+	/**
+	 * Get the value of field with the corresponding header name
+	 * */
 	public static String getValueOf(String[] fields, String headerName){
 		return fields[csvHeaders.indexOf(headerName)];
 	}

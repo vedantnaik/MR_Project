@@ -56,7 +56,6 @@ public class FileSystem {
 		
 		public static final String S3_OUTPUT_PART_TEMP_FILE = "s3OutputPartTemp";
 		public static final String MyS3BucketOuputPart_DistributedEC2Sort_FOLDER = "DistributedEC2Sort";
-		
 	}
 	
 	String inputBucketName;
@@ -87,7 +86,6 @@ public class FileSystem {
 		serverIPaddrMap = new HashMap<Integer, String>();
 		addIPaddrsFromPublicDnsFile();
 		
-		///////////////////////////////////////////////
 		// TODO: REMOVE AFTER DEBUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		
 //		int debug_limitCount = 0;
@@ -127,12 +125,13 @@ public class FileSystem {
 	 * 
 	 ****************************************************************/
 	
+	/**
+	 * Read input files from input bucket which contain
+	 * Return list of DataRecords from that file
+	 * */
 	public static ArrayList<DataRecord> readInputDataRecordsFromInputBucket(String inputBucketName, String fileObjectKey){
-	
 		ArrayList<DataRecord> dataRecordList = new ArrayList<DataRecord>();
-		
 		try {
-			
 			AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 			AmazonS3 s3client = new AmazonS3Client(credentials);
 			S3Object s3object = s3client.getObject(new GetObjectRequest(inputBucketName, fileObjectKey));
@@ -178,7 +177,6 @@ public class FileSystem {
 			}
 			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			System.out.println("Unable to read file while converting to DataRecord");
 			e.printStackTrace();
 		}
@@ -186,6 +184,9 @@ public class FileSystem {
 		return dataRecordList;
 	}
 	
+	/**
+	 * Divide the files among servers such that every server handles roughly same amount of data
+	 * */
 	public HashMap<Integer, ArrayList<String>> getS3Parts(int parts){
 		
 		Collections.sort(this.fileNameSizeList_GLOBAL, new Comparator<String>() {
@@ -223,6 +224,10 @@ public class FileSystem {
 	 * 
 	 * */
 
+	/**
+	 * 1. Write given data records to EC2 local system
+	 * 2. If the partition belongs to another server, copy the written file to EC2 instance of respective server
+	 * */
 	public static void writeToEC2(List<DataRecord> drsPartListToBeWritten, int serverNumber_p, int fromServer_s) throws IOException, JSchException, SftpException {
 		String fileName = Constants.SAMPLESORT_PART_TEMP_FOLDER+"/s"+fromServer_s+"p"+serverNumber_p+".txt";
 			
@@ -234,7 +239,7 @@ public class FileSystem {
 		
 		System.out.println("f.mkdir for " + fileName);
 		
-		System.out.println("test reading folders");
+		// 1. Write given data records to EC2 local system
 		File folderIn1 = new File(Constants.SAMPLESORT_PART_TEMP_FOLDER+"/");
 		
 		for(File partFile : folderIn1.listFiles()){
@@ -245,6 +250,7 @@ public class FileSystem {
 		ObjectOutputStream oos = new ObjectOutputStream(fout);
 		oos.writeObject(drsPartListToBeWritten);
 
+		// 2. If the partition belongs to another server, copy the written file to EC2 instance of respective server
 		if(serverNumber_p != fromServer_s){
 			writeToLocalOfOtherServer(serverNumber_p, fromServer_s);
 		}
@@ -295,23 +301,20 @@ public class FileSystem {
 		channel = (ChannelSftp)session.openChannel("sftp");
 		channel.connect();
 		    File localFile = new File(fsrc);
-		    System.out.println("local file name : " + fsrc + " localFile " + localFile.getName());
-		   
-		    //If you want you can change the directory using the following line.
-//		    channel.cd("Project");
-		    System.out.println("pwd " + channel.pwd());
-		    System.out.println("sampleSortPartTemp/"+localFile.getName() + " ::  " + "sampleSortMyParts/");
+		    System.out.println("local file to copy name : " + fsrc + " localFileName " + localFile.getName());
 		    channel.put("sampleSortPartTemp/"+localFile.getName() , "Project/sampleSortMyParts/"+localFile.getName());
-		    
 		    channel.disconnect();
 		session.disconnect();
 	}
 	
 	/*
-	 * 			WRITE TO EC2 LOCAL DISK
+	 * 			READ FROM EC2 LOCAL DISK
 	 * 
 	 * */
 	
+	/**
+	 * Read partitions for this server written by other servers to sampleSortMyParts folder in this instance
+	 * */
 	public ArrayList<DataRecord> readMyParts(int serverNumber) throws IOException, ClassNotFoundException{
 		
 		ArrayList<DataRecord> myDataRecordList = new ArrayList<DataRecord>();
@@ -387,8 +390,7 @@ public class FileSystem {
 						
 			System.out.println("writePartsToOutputBucket moved to s3");
 
-			// later uncomment
-//			tempFileToDelete.delete();
+			tempFileToDelete.delete();
 		}
 		catch(Exception e){
 			System.out.println("failure in writePartsToOutputBucket");
@@ -410,12 +412,8 @@ public class FileSystem {
 	 * */
 	
 	public static void printFinalOutputPartFiles(String outputBucketName, int topX){
-
-		
-//		ArrayList<DataRecord> dataRecordList = new ArrayList<DataRecord>();
 		
 		try {
-			
 			AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 			AmazonS3 s3client = new AmazonS3Client(credentials);
 			ObjectListing objList = s3client.listObjects(outputBucketName);
@@ -441,21 +439,14 @@ public class FileSystem {
 				}
 			}
 			
-			
-			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			System.out.println("Unable to read file while converting to DataRecord");
 			e.printStackTrace();
 		}
-		
 	}
 	
-	
 	// Getters and Setters
-	
 	public static HashMap<Integer, String> getServerIPaddrMap() {
 		return serverIPaddrMap;
 	}
-
 }

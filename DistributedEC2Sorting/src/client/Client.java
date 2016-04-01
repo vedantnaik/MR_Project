@@ -19,7 +19,6 @@ import utils.FileSystem;
  *
  */
 public class Client {
-	
 
 	static int port = 1210;
 	
@@ -41,14 +40,14 @@ public class Client {
 			System.out.println("servers are " + servers);
 			for (int i = 0; i < totalServers; i++) {
 
-					sendingSocket.put(i, new Socket(servers.get(i), port));
-					Socket socketTmp = sendingSocket.get(i);
-					socketTmp.setSoTimeout(0);
-					sendingSocket.put(i, socketTmp);
-					out.put(i, new DataOutputStream(sendingSocket
-							.get(i).getOutputStream()));
-					inFromServer.put(i ,new BufferedReader(new InputStreamReader(
-					sendingSocket.get(i).getInputStream())));
+				sendingSocket.put(i, new Socket(servers.get(i), port));
+				Socket socketTmp = sendingSocket.get(i);
+				socketTmp.setSoTimeout(0);
+				sendingSocket.put(i, socketTmp);
+				out.put(i, new DataOutputStream(sendingSocket
+						.get(i).getOutputStream()));
+				inFromServer.put(i ,new BufferedReader(new InputStreamReader(
+				sendingSocket.get(i).getInputStream())));
 
 			}
 		} catch (IOException e) {
@@ -77,7 +76,6 @@ public class Client {
 		HashMap<Integer, ArrayList<String>> partsMap = myS3FS.getS3Parts(totalServers); 
 
 		try {
-
 			for (int i = 0; i < totalServers; i++) {
 				
 				out.get(i).writeBytes("sort#start\n");
@@ -88,7 +86,6 @@ public class Client {
 				
 				out.get(i).writeBytes("sort#end\n");
 				System.out.println("Running job on Server ..." + i);
-
 			}
 
 			// done phase
@@ -99,8 +96,7 @@ public class Client {
 
 					String result = inFromServer.get(i).readLine();
 					String[] returnedResult = result.split("#");
-					System.out.println(returnedResult[0] + " Results from : "
-							+ i);
+					System.out.println(returnedResult[0] + " Results from : " + i);
 
 					replied[i] = true;
 					if (replied[i]) {
@@ -113,7 +109,7 @@ public class Client {
 				}
 
 			}
-			// totalServers people replied
+			// totalServers replied
 			System.out.println("replied array " + Arrays.toString(replied));
 
 			System.out.println("sending command to distribute now!");
@@ -138,9 +134,7 @@ public class Client {
 	 *            the server port eg. 1212
 	 */
 	private void killer() {
-
 		try {
-
 			for (int i = 0; i < totalServers; i++) {
 				Socket sendingSocket = new Socket(servers.get(i), port);
 				DataOutputStream out = new DataOutputStream(
@@ -165,7 +159,7 @@ public class Client {
 		if (args.length != 2) {
 			System.out
 					.println("Include Server IP Address. Currently only localhost!");
-			System.out.println("Usage Client <bucketname>");
+			System.out.println("Usage Client <inputBucketname> <outputBucketName>");
 			System.exit(0);
 		}
 		BufferedReader din = new BufferedReader(
@@ -198,5 +192,4 @@ public class Client {
 			System.out.println();
 		}
 	}
-
 }
