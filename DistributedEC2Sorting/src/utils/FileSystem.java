@@ -371,7 +371,7 @@ public class FileSystem {
 				
 				String outputInRequiredFormat = wban + ", " + date + ", " + time + ", " + dryBulbTemp + "\n";
 				
-				System.out.println("writing " + outputInRequiredFormat);
+//				System.out.println("writing " + outputInRequiredFormat);
 				bufWriter.write(outputInRequiredFormat);
 			}
 			// 3. close streams and delete temp file

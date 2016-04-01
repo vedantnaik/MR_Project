@@ -37,8 +37,8 @@ public class Server implements Runnable {
 	private static int mypart_serversReplied = 0;
 
 	private static List<Double> dataRecordPivotsList = new ArrayList<Double>(1000);
-	private static List<Double> serverDataRecordPivotValuesList = new ArrayList<Double>(1000);
-	private static List<Double> globalDataRecordPivotValuesList = new ArrayList<Double>(1000);
+	private static List<Double> serverDataRecordPivotValuesList = new ArrayList<Double>();
+	private static List<Double> globalDataRecordPivotValuesList = new ArrayList<Double>();
 	private static List<Double> stage5ReadDataRecordList = new ArrayList<Double>(1000);
 	
 	private static boolean distributePivotON = false;
@@ -199,8 +199,10 @@ public class Server implements Runnable {
 							fileNameList.add(receivedResult[0]);
 						}
 						else if (distributePivotON) {
+							System.out.println("adding to server data records pivot list " + receivedResult[0]);
 							serverDataRecordPivotValuesList.add(Double.parseDouble((receivedResult[0])));
 						} else if (globalPivotON) {
+							System.out.println("adding to global pivot list " + receivedResult[0]);
 							globalDataRecordPivotValuesList.add(Double.parseDouble(receivedResult[0]));
 						} else if (mypartON) {
 							stage5ReadDataRecordList.add(Double.parseDouble(receivedResult[0]));
@@ -223,12 +225,13 @@ public class Server implements Runnable {
 	private void stage1_sort_my_partition() {
 		System.out.println("Stage1: read input files assigned to server...");
 		// TODO: later make this in threads
-
+		int count = 0;
 		// 1. Read
 		for (String fileName : fileNameList){
 			try {
-				System.out.println("\tReading file " + fileName);
+				System.out.println("\tReading file " + fileName + " " + count);
 				serverDataRecords.addAll(FileSystem.readInputDataRecordsFromInputBucket(inputBucketName, fileName));
+				count++;
 			} catch (Exception e) {
 				System.err.println("SERVER : Stage 1 Sorting : unable to read file");
 				e.printStackTrace();
@@ -261,13 +264,16 @@ public class Server implements Runnable {
 		
 		System.out.println("my pivots are : " + pivArray);
 		dataRecordPivotsList.addAll(pivArray);
-
+		int localInterval = serverDataRecordPivotValuesList.size() / numberOfProcessors;
+		int localcount = 1;
 		// 2. Send calculated pivots from this server to server-0 (master)
 		if (serverNumber != 0) {
 			System.out.println("sending distributePivot#" + piv + " to " + FileSystem.getServerIPaddrMap().get(0));
 			outDist.get(0).writeBytes("distributePivot#start\n");
-			for(int i = 0; i < serverDataRecords.size() ; i += numberOfProcessors){
+			for(int i = localInterval; i < serverDataRecords.size() && 
+					localcount < numberOfProcessors	; i += localInterval){
 				outDist.get(0).writeBytes(serverDataRecords.get(i).getSortValue() + "\n");
+				localcount++;
 			}
 			outDist.get(0).writeBytes("distributePivot#end\n");
 			System.out.println("distributed from serverNumber: "
@@ -294,17 +300,21 @@ public class Server implements Runnable {
 		
 		if (serverNumber == 0 && receivedResult[1].equalsIgnoreCase("end")) {
 			serversReplied++;
+			System.out.println("servers Replied " + serversReplied);
 		}
 
 		if (serversReplied == totalServers - 1) {
+			System.out.println("Adding to server's pivot list to make global set " + serversReplied);
 			// 2. Add to server-0 pivot list to make complete global pivots list
+			
+			System.out.println("server data record pivot list " + serverDataRecordPivotValuesList);
+			System.out.println("dataRecordPivotsList " + dataRecordPivotsList);
+			
 			serverDataRecordPivotValuesList.addAll(dataRecordPivotsList);
-
+			System.out.println("Collections sort");
 			Collections.sort(serverDataRecordPivotValuesList);
 
-			System.out.println("All Sorted Pivots "	+  serverDataRecordPivotValuesList);
-
-			System.out.println("Selecting global pivots");
+			System.out.println("All Sorted Pivots. Selecting global pivots");
 
 			// 3. Commence global pivot calculation, after local pivots from all servers received
 			List<Double> pivArray = new ArrayList<Double>();
@@ -357,23 +367,22 @@ public class Server implements Runnable {
 					
 				int count = 0, counterPivot = 0;
 				
-				List<List<DataRecord>> drsToBeSent = new ArrayList<>(1000);
-				
+				List<List<DataRecord>> drsToBeSent = new ArrayList<>();
+				System.out.println("Init partitions");
 				for(int i = 0; i < globalDataRecordPivotValuesList.size() + 1; i++){
 					drsToBeSent.add(i, new ArrayList<DataRecord>(1000));
 				}
-				
+				System.out.println("Creating partitions for list of size " + serverDataRecords.size());
 				// 2. Create partitions of local data using global pivots
 				for (DataRecord drs : serverDataRecords) {
 					if (counterPivot == globalDataRecordPivotValuesList.size()) {
-						drsToBeSent.get(count).add(new DataRecord(drs));
-					} else if (globalDataRecordPivotValuesList.get(counterPivot) > drs.getSortValue()
-							|| globalDataRecordPivotValuesList.get(counterPivot) == drs.getSortValue()) {
-						drsToBeSent.get(count).add(new DataRecord(drs));
+						drsToBeSent.get(count).add(drs);
+					} else if (globalDataRecordPivotValuesList.get(counterPivot) >= drs.getSortValue()){
+						drsToBeSent.get(count).add(drs);
 					} else {
 						counterPivot++;
 						count++;
-						drsToBeSent.get(count).add(new DataRecord(drs));
+						drsToBeSent.get(count).add(drs);
 					}
 				}
 				
@@ -396,9 +405,9 @@ public class Server implements Runnable {
 					}
 					outDist.get((serverNumber + i) % totalServers).writeBytes("mypart#end\n");
 				}
-				
+				System.out.println("keeping my partition in cache");
 				for(DataRecord i : drsToBeSent.get(serverNumber)){
-					serverDataRecordsCache.add(new DataRecord(i));
+					serverDataRecordsCache.add(i);
 				}
 				
 				// useless now 
@@ -425,7 +434,7 @@ public class Server implements Runnable {
 			
 			if (mypart_serversReplied == totalServers - 1) {
 
-				System.out.println("Begin sorting complete serverDataRecordsCache...");
+				System.out.println("Begin sorting complete serverDataRecordsCache..." + serverDataRecordsCache.size());
 				// 1. Read this server partitions written from previous step to get complete record list
 				serverDataRecordsCache.addAll(MRFS.readMyParts(serverNumber));
 				
