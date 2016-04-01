@@ -18,9 +18,9 @@ import utils.S3FileReader;
 public class DataRecord implements Serializable, Comparable<DataRecord>{
 
 	private static final long serialVersionUID = 1L;
-	private String fileName;
-	private long fromChar;
-	private int recordLength;
+//	private String fileName;
+//	private long fromChar;
+//	private int recordLength;
 	private double sortValue;
 	
 	// DATA RECORD COMPLETE VALUES
@@ -29,23 +29,20 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	private String time;
 	
 	// CONSTRUCTORS
-	public DataRecord(String fileName, long fromChar, int recordLength) {
-		this.fileName = fileName;
-		this.fromChar = fromChar;
-		this.recordLength = recordLength;
-	}
-	
-	public DataRecord(String fileName, long fromChar, int recordLength, double sortValue) {
-		this.fileName = fileName;
-		this.fromChar = fromChar;
-		this.recordLength = recordLength;
-		this.sortValue = sortValue;
-	}
+//	public DataRecord(String fileName, long fromChar, int recordLength) {
+//		this.fileName = fileName;
+//		this.fromChar = fromChar;
+//		this.recordLength = recordLength;
+//	}
+//	
+//	public DataRecord(String fileName, long fromChar, int recordLength, double sortValue) {
+//		this.fileName = fileName;
+//		this.fromChar = fromChar;
+//		this.recordLength = recordLength;
+//		this.sortValue = sortValue;
+//	}
 	
 	public DataRecord(DataRecord copyFrom) {
-		this.fileName = copyFrom.getFileName();
-		this.fromChar = copyFrom.getFromChar();
-		this.recordLength = copyFrom.getRecordLength();
 		this.sortValue = copyFrom.getSortValue();
 		
 		this.wban = copyFrom.getWban();
@@ -54,11 +51,10 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	}
 
 	// DATA RECORD COMPLETE VALUES
-	public DataRecord(String fileName, long fromChar, int recordLength, double sortValue,
-			String wban, int date, String time) {
-		this.fileName = fileName;
-		this.fromChar = fromChar;
-		this.recordLength = recordLength;
+	public DataRecord(double sortValue, String wban, int date, String time) {
+//		this.fileName = fileName;
+//		this.fromChar = fromChar;
+//		this.recordLength = recordLength;
 		this.sortValue = sortValue;
 		
 		this.wban = wban;
@@ -72,41 +68,41 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	/**
 	 * Read the complete record from the file system and return as a string.
 	 * */
-	public String readRecord(String bucketName){
-		String lineToRead="";
-
-		try {
-			S3FileReader myFs = new S3FileReader(bucketName, this.fileName);
-			
-			Reader decoder = myFs.getS3FileReader();
-			
-			char[] cbuf = new char[1000];	
-			decoder.skip(this.fromChar);
-			decoder.read(cbuf, 0, this.recordLength);
-			lineToRead = new String(cbuf);
-			
-			cbuf = null;			
-			decoder.close();
-			
-		} catch (FileNotFoundException e) {
-			System.err.println("Unable to locate file " + this.fileName);
-			e.printStackTrace();
-		} catch (IOException e) {
-			System.err.println("Unable to read from file " + this.fileName);
-			e.printStackTrace();
-		}
-		
-		return lineToRead;
-	}
-
-	public String readRecordFromS3(String inputBucketName) {
-		String[] fields = this.readRecord(inputBucketName).split(",");
-		String wban = DataFileParser.getValueOf(fields, DataFileParser.Field.WBAN_NUMBER);
-		String date = DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY);
-		String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
-		String dryBulbTemp = DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP);
-		return wban+","+date+","+time+","+dryBulbTemp;
-	}
+//	public String readRecord(String bucketName){
+//		String lineToRead="";
+//
+//		try {
+//			S3FileReader myFs = new S3FileReader(bucketName, this.fileName);
+//			
+//			Reader decoder = myFs.getS3FileReader();
+//			
+//			char[] cbuf = new char[1000];	
+//			decoder.skip(this.fromChar);
+//			decoder.read(cbuf, 0, this.recordLength);
+//			lineToRead = new String(cbuf);
+//			
+//			cbuf = null;			
+//			decoder.close();
+//			
+//		} catch (FileNotFoundException e) {
+//			System.err.println("Unable to locate file " + this.fileName);
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			System.err.println("Unable to read from file " + this.fileName);
+//			e.printStackTrace();
+//		}
+//		
+//		return lineToRead;
+//	}
+//
+//	public String readRecordFromS3(String inputBucketName) {
+//		String[] fields = this.readRecord(inputBucketName).split(",");
+//		String wban = DataFileParser.getValueOf(fields, DataFileParser.Field.WBAN_NUMBER);
+//		String date = DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY);
+//		String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
+//		String dryBulbTemp = DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP);
+//		return wban+","+date+","+time+","+dryBulbTemp;
+//	}
 	
 	// DATA RECORD COMPLETE VALUES
 	/**
@@ -120,9 +116,9 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	/**
 	 * Read the complete record from the file system and return as a string..
 	 * */
-	public String readRecordFrom(S3FileReader s3fr) throws IOException{
-		return s3fr.readFromOffsetToLen(this.fromChar, this.recordLength);
-	}
+//	public String readRecordFrom(S3FileReader s3fr) throws IOException{
+//		return s3fr.readFromOffsetToLen(this.fromChar, this.recordLength);
+//	}
 	
 	/**
 	 * Display string on console. Used for debugging.
@@ -144,29 +140,29 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	
 	// GETTERS AND SETTERS
 	
-	public String getFileName() {
-		return fileName;
-	}
-	
-	public void setFileName(String fileName) {
-		this.fileName = fileName;
-	}
-	
-	public long getFromChar() {
-		return fromChar;
-	}
-	
-	public void setFromChar(long fromChar) {
-		this.fromChar = fromChar;
-	}
-
-	public int getRecordLength() {
-		return recordLength;
-	}
-
-	public void setRecordLength(int recordLength) {
-		this.recordLength = recordLength;
-	}
+//	public String getFileName() {
+//		return fileName;
+//	}
+//	
+//	public void setFileName(String fileName) {
+//		this.fileName = fileName;
+//	}
+//	
+//	public long getFromChar() {
+//		return fromChar;
+//	}
+//	
+//	public void setFromChar(long fromChar) {
+//		this.fromChar = fromChar;
+//	}
+//
+//	public int getRecordLength() {
+//		return recordLength;
+//	}
+//
+//	public void setRecordLength(int recordLength) {
+//		this.recordLength = recordLength;
+//	}
 
 	public double getSortValue() {
 		return sortValue;

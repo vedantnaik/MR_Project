@@ -151,7 +151,7 @@ public class FileSystem {
 					int date = Integer.parseInt(DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY));
 					String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
 					
-					dataRecordList.add(new DataRecord("", 0, 0, dryBulbTemp, wban, date, time));
+					dataRecordList.add(new DataRecord(dryBulbTemp, wban, date, time));
 				}
 			}
 			
@@ -204,7 +204,7 @@ public class FileSystem {
 					String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
 					
 					// Checkpoint 2
-					dataRecordList.add(new DataRecord("", 0, 0, dryBulbTemp, wban, date, time));
+					dataRecordList.add(new DataRecord(dryBulbTemp, wban, date, time));
 					
 				}
 				offset = offset + fileLine.length() + 1;
