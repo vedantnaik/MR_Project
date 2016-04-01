@@ -3,15 +3,12 @@ package sorter;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.ListIterator;
 
 import datafile.DataRecord;
@@ -20,32 +17,32 @@ import utils.FileSystem;
 //Checkpoint 3 : local FS and merger
 public class LocalFSSorter {
 
-//	public static void main(String[] args) {
-//		
-//		ArrayList<DataRecord> drlist = FileSystem.readInputDataRecordsFromInputBucket("cs6240sp16", "climate/199703hourly.txt.gz");
-//		Collections.sort(drlist);
-//		writeToTempCache(drlist, "TEMPSORT1");
-//		
-//		
-//		
-//		ArrayList<DataRecord> drlist2 = FileSystem.readInputDataRecordsFromInputBucket("cs6240sp16", "climate/199702hourly.txt.gz");
-//		Collections.sort(drlist2);
-//		
-//		
-//		mergeWithTempCache(drlist2, "TEMPSORT1");
-//		
-//		
-//		
-//		ArrayList<DataRecord> merList = readFromTempCache("TEMPSORT1_merger");
-//		
-//		for(DataRecord m : merList){
-//			System.out.println(m.toString());
-//		}
-//		
-//		int size = drlist.size() + drlist2.size();
-//		System.out.println( drlist.size() + " " +  drlist2.size() );
-//		System.out.println( size + " " +  merList.size() );
-//	}
+	public static void main(String[] args) {
+		
+		ArrayList<DataRecord> drlist = FileSystem.readInputDataRecordsFromInputBucket("cs6240sp16", "climate/199703hourly.txt.gz");
+		Collections.sort(drlist);
+		writeToTempCache(drlist, "TEMPSORT1");
+		
+		
+		
+		ArrayList<DataRecord> drlist2 = FileSystem.readInputDataRecordsFromInputBucket("cs6240sp16", "climate/199702hourly.txt.gz");
+		Collections.sort(drlist2);
+		
+		
+		mergeWithTempCache(drlist2, "TEMPSORT1");
+		
+		
+		
+		ArrayList<DataRecord> merList = readFromTempCache("TEMPSORT1_merger");
+		
+		for(DataRecord m : merList){
+			System.out.println(m.toString());
+		}
+		
+		int size = drlist.size() + drlist2.size();
+		System.out.println( drlist.size() + " " +  drlist2.size() );
+		System.out.println( size + " " +  merList.size() );
+	}
 	
 	
 	public static int cacheFileSize(String tempCacheFileName){
@@ -152,11 +149,18 @@ public class LocalFSSorter {
 	}
 	
 	private static DataRecord getDataRecordFromWriteString(String line){
-		String[] fields = line.split(","); 
-		return new DataRecord(Double.parseDouble(fields[0]), 
-									fields[1], 
-									Integer.parseInt(fields[2]), 
-									fields[3]);
+		
+		try{
+			String[] fields = line.split(","); 
+			return new DataRecord(Double.parseDouble(fields[0]), 
+										fields[1], 
+										Integer.parseInt(fields[2]), 
+										fields[3]);
+		} catch (Exception e) {
+			System.out.println(line);
+			System.exit(1);
+			return null;
+		}
 	}
 	
 	// TODO: TEST
@@ -169,23 +173,24 @@ public class LocalFSSorter {
 			
 			File tempCacheFile = new File(tempCacheFileName);
 			BufferedReader cacheReader = new BufferedReader(new FileReader(tempCacheFile));
+			
 			ListIterator<DataRecord> recordToAddIter = recordsToAdd.listIterator();
+			
 			String line;
 			String[] fields;
 			DataRecord drToAdd;
 			DataRecord drCached;
 			
 			line = cacheReader.readLine();
-			fields = line.split(","); 
-			drCached = new DataRecord(fields[0], Long.parseLong(fields[1]), Integer.parseInt(fields[2]), Double.parseDouble(fields[3]));
+			// double sortValue, String wban, int date, String time			
+			drCached = getDataRecordFromWriteString(line);
 			drToAdd = recordToAddIter.next();
 			recordToAddIter.previous();
 			while(recordToAddIter.hasNext() && line != null){
 				if(drCached.compareTo(drToAdd) == -1){
 					mergerWriter.write(makeWriteString(drCached));
+					drCached = getDataRecordFromWriteString(line);
 					line = cacheReader.readLine();
-					fields = line.split(","); 
-					drCached = new DataRecord(fields[0], Long.parseLong(fields[1]), Integer.parseInt(fields[2]), Double.parseDouble(fields[3]));
 				} else {
 					mergerWriter.write(makeWriteString(drToAdd));
 					drToAdd = recordToAddIter.next();
@@ -200,7 +205,7 @@ public class LocalFSSorter {
 			while(line != null){
 				mergerWriter.write(makeWriteString(drCached));
 				fields = line.split(","); 
-				drCached = new DataRecord(fields[0], Long.parseLong(fields[1]), Integer.parseInt(fields[2]), Double.parseDouble(fields[3]));
+				drCached = getDataRecordFromWriteString(line);
 				line = cacheReader.readLine();
 			}
 			
@@ -211,19 +216,11 @@ public class LocalFSSorter {
 			File renameFileToCache = new File(tempCacheFileName);
 			mergerFile.renameTo(renameFileToCache);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 	}
 
 
-	public static long findIndexOfPivot(ArrayList<DataRecord> drlist, Double piv){
-		long ind = drlist.size() / 2;
-		
-//		while(drlist)
-		
-		return ind;
-	} 
 
 }
