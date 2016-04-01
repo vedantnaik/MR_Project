@@ -507,4 +507,20 @@ public class FileSystem {
 			}
 		}
 	}
+
+	public void writeCachePartsToOutputBucket(int serverNumber, String mypartsSortedCompleteFile) {
+
+		String serverNum = serverNumber+"";
+		String fileNameOnS3Bucket = Constants.MyS3BucketOuputPart_DistributedEC2Sort_FOLDER
+				+"/part-"+("00000" + serverNum).substring(serverNum.length());
+		System.out.println("writePartsToOutputBucket moving to s3 " + outputBucketName);
+		PutObjectResult result = s3client.putObject(new PutObjectRequest(this.outputBucketName, 
+				fileNameOnS3Bucket, mypartsSortedCompleteFile).withAccessControlList(acl));
+		System.out.println("result1 " + result);			
+		
+		System.out.println("writePartsToOutputBucket moved to s3");
+		
+		File del = new File(mypartsSortedCompleteFile);
+		del.delete();
+	}
 }

@@ -449,11 +449,11 @@ public class Server implements Runnable {
 				MRFS.mergeMyParts(serverNumber, MYPARTS_SORTED_COMPLETE_FILE);
 				
 				// 2. Sort complete record list
-				Collections.sort(serverDataRecordsCache);
+//				Collections.sort(serverDataRecordsCache);
 				System.out.println("Complete partition for server sorted.");
 				
 				// 3. Write final output to output S3 bucket
-				MRFS.writePartsToOutputBucket(serverDataRecordsCache, serverNumber);
+				MRFS.writeCachePartsToOutputBucket(serverNumber, MYPARTS_SORTED_COMPLETE_FILE);
 				System.out.println("Written part files to output S3 bucket.");
 				outClient.writeBytes("finished"+ "\n");
 			}
