@@ -188,7 +188,7 @@ public class Server implements Runnable {
 						// specific part receiving phase
 						System.out.println("STAGE 5 : "
 								+ "mypart receiving stage");
-						stage5_mypart_receive_parts(receivedResult);
+						stage5_mypart_receive_parts(receivedResult, out);
 						
 					} else if (receivedResult[0].equals("kill")) {
 						System.out.println("KILLED!");
@@ -263,7 +263,8 @@ public class Server implements Runnable {
 			localcount++;
 		}
 		
-		System.out.println("my pivots are : " + pivArray);
+		System.out.println("My range is [" + serverDataRecords.get(0) + " to " + serverDataRecords.get(serverDataRecords.size()-1) + "]");
+		System.out.println("My pivots are : " + pivArray);
 		dataRecordPivotsList.addAll(pivArray);
 
 		// 2. Send calculated pivots from this server to server-0 (master)
@@ -423,7 +424,7 @@ public class Server implements Runnable {
 	 * 2. Sort complete record list
 	 * 3. Write final output to output S3 bucket
 	 * */
-	private void stage5_mypart_receive_parts(String[] receivedResult) throws IOException, ClassNotFoundException {
+	private void stage5_mypart_receive_parts(String[] receivedResult, DataOutputStream out) throws IOException, ClassNotFoundException {
 		if(receivedResult[1].equals("start")){
 			System.out.println("STAGE 5: receiving my partitions");	
 			mypartON = true;
@@ -446,6 +447,7 @@ public class Server implements Runnable {
 				// 3. Write final output to output S3 bucket
 				MRFS.writePartsToOutputBucket(serverDataRecordsCache, serverNumber);
 				System.out.println("Written part files to output S3 bucket.");
+				out.writeBytes("finished"+ "\n");
 			}
 		}
 	}

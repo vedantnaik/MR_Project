@@ -361,7 +361,7 @@ public class FileSystem {
 			File tempFileToDelete = new File(Constants.S3_OUTPUT_PART_TEMP_FILE);
 			BufferedWriter bufWriter = new BufferedWriter(new FileWriter(tempFileToDelete));
 			
-			System.out.println("writePartsToOutputBucket enter " + sortedDataRecords.size());
+			System.out.println("writePartsToOutputBucket enter with " + sortedDataRecords.size());
 			for(DataRecord drToWrite : sortedDataRecords){
 				String[] fields = drToWrite.readRecord(this.inputBucketName).split(",");
 				

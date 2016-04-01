@@ -21,10 +21,10 @@ FILE=publicDnsFile.txt
 # lines in the file that we are reading from
 # IMPORTANT: We will be runnning the java program on each instance, so we dont wait for one program to
 # complete and exit
-comds="cd ~/Project; java -Xmx5120m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server $i $inputBucket $bucketName > log.txt"
+comds="cd ~/Project; java -Xmx5120m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server $i $inputBucket $bucketName > log.txt 2>&1"
 comds1="cd ~/Project; java -Xmx5120m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server "
-comds2="$inputBucket $bucketName > log.txt"
-comdsserver="rm -rf ~/Project/sampleSortPartTemp/; rm ~/Project/sampleSortMyParts/*;cd ~/Project; java -Xmx5120m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server 0 $inputBucket $bucketName > log.txt"
+comds2="$inputBucket $bucketName > log.txt 2>&1"
+comdsserver="rm -rf ~/Project/sampleSortPartTemp/; rm ~/Project/sampleSortMyParts/*;cd ~/Project; java -Xmx5120m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server 0 $inputBucket $bucketName > log.txt 2>&1"
 #comdsclient="cd ~/Project; java -cp DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server 0 $inputBucket > ~/Project/log.txt &"
 i=0
 server="not decided"
@@ -36,7 +36,7 @@ while read line;do
                 `ssh -i MyKeyPair.pem ubuntu@$line -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "${comdsserver}"` < /dev/null &
         else
         	echo "slave instance"
-                `ssh -i MyKeyPair.pem ubuntu@$line -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "rm -rf ~/Project/sampleSortPartTemp/; rm ~/Project/sampleSortMyParts/*;cd ~/Project; java -Xmx5120m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server $i $inputBucket $bucketName > log.txt"` < /dev/null &
+                `ssh -i MyKeyPair.pem ubuntu@$line -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "rm -rf ~/Project/sampleSortPartTemp/; rm ~/Project/sampleSortMyParts/*;cd ~/Project; java -Xmx5120m -Xms256m -cp ~/Project/DistributedEC2Sorting-0.0.1-SNAPSHOT-jar-with-dependencies.jar server.Server $i $inputBucket $bucketName > log.txt 2>&1"` < /dev/null &
         fi
         i=$((i+1))
 done < $FILE

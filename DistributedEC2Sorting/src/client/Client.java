@@ -30,6 +30,12 @@ public class Client {
 	static FileSystem MRFS;
 	private static Map<Integer, String> servers;
 	
+	/**
+	 * The Client constructor when called, connects to all 
+	 * the Server instances and cannot start before the Servers do.
+	 * Maintains an Map of Sockets to talk to all the servers and 
+	 * do the handshake process.
+	 */
 	public Client() {
 		try {
 			servers = FileSystem.getServerIPaddrMap();
@@ -57,16 +63,18 @@ public class Client {
 	}
 
 	/**
-	 * Calls the server with sort function and sends the file inputs as String
-	 * after reading
-	 * 
-	 * @param fileName
-	 *            the filename to be read. If not found returns to main loop and
-	 *            continues to ask
-	 * @param serverIP
-	 *            the server ip of the server eg. 127.0.0.1
-	 * @param serverPort
-	 *            the server port eg. 1212
+	 * 1. Calls the server with sort function and sends the file inputs as String
+	 * 	  after reading.
+	 * 2. It then waits for the Server to reply back when their local sorting
+	 *    is done. 
+	 * 3. Then client issues a command to all Servers to distribute their 
+	 * 	  pivots.
+	 * 4. The client then waits for the servers to reply when they finish
+	 *    and issues the self-destruct command to kill servers.
+	 * @param fileName the filename to be read. If not found returns to 
+	 * 			main loop and continues to ask
+	 * @param serverIP the server ip of the server eg. 127.0.0.1
+	 * @param serverPort the server port eg. 1212
 	 * @throws IOException 
 	 */
 	public void callSorter(String inputBucketName, String outputBucketName) throws IOException {
@@ -76,6 +84,9 @@ public class Client {
 		HashMap<Integer, ArrayList<String>> partsMap = myS3FS.getS3Parts(totalServers); 
 
 		try {
+			
+			 // 1. Calls the server with sort function and sends the file inputs as String
+			 //	  after reading.
 			for (int i = 0; i < totalServers; i++) {
 				
 				out.get(i).writeBytes("sort#start\n");
@@ -88,7 +99,8 @@ public class Client {
 				System.out.println("Running job on Server ..." + i);
 			}
 
-			// done phase
+			// 2. It then waits for the Server to reply back when their local sorting
+		    //   is done. 
 			int replies = 0;
 			boolean[] replied = new boolean[totalServers];
 			while (true) {
@@ -112,12 +124,46 @@ public class Client {
 			// totalServers replied
 			System.out.println("replied array " + Arrays.toString(replied));
 
+			
+			// 3. Then client issues a command to all Servers to distribute their 
+			//  	  pivots.
 			System.out.println("sending command to distribute now!");
 			// distribute pivots
 			for (int i = 0; i < totalServers; i++) {
 				out.get(i).writeBytes("distribute#All" + "\n");
 			}
 			System.out.println("distributed!");
+			
+			
+			
+			System.out.println("Waiting for Servers to finish");
+			//4. The client then waits for the servers to reply when they finish
+			//    and issues the self-destruct command to kill servers.
+			
+			// last reply phase phase
+			replies = 0;
+			Arrays.fill(replied, false);
+			while (true) {
+				for (int i = 0; i < replied.length && !replied[i]; i++) {
+
+					String result = inFromServer.get(i).readLine();
+					String[] returnedResult = result.split("#");
+					System.out.println(returnedResult[0] + " Results from : " + i);
+
+					replied[i] = true;
+					if (replied[i]) {
+						replies++;
+					}
+				}
+				if (replies == totalServers) {
+					System.out.println("Servers Finished " + replies);
+					System.out.println("Killing all servers!");
+					killer();
+					System.out.println("Killed Server, Self Destruct!");
+					System.exit(0);
+				}
+
+			}
 
 		} catch (Exception e) {
 			System.out.println("Cannot connect to the Server");
@@ -128,10 +174,8 @@ public class Client {
 	/**
 	 * Sends a kill command to server to terminate itself
 	 * 
-	 * @param serverIP
-	 *            the server ip of the server eg. 127.0.0.1
-	 * @param serverPort
-	 *            the server port eg. 1212
+	 * @param serverIP the server ip of the server eg. 127.0.0.1
+	 * @param serverPort the server port eg. 1212
 	 */
 	private void killer() {
 		try {
@@ -150,7 +194,7 @@ public class Client {
 	}
 
 	/**
-	 * main driver program
+	 * main sort driver program
 	 * 
 	 * @param args
 	 * @throws Exception
@@ -162,34 +206,17 @@ public class Client {
 			System.out.println("Usage Client <inputBucketname> <outputBucketName>");
 			System.exit(0);
 		}
-		BufferedReader din = new BufferedReader(
-				new InputStreamReader(System.in));
 
 		String inputBucketName = args[0];
 		String outputBucketName = args[1];
 		
-		System.out.println("reading s3 bucket");
+		System.out.println("Reading s3 bucket");
 		MRFS = new FileSystem(inputBucketName, outputBucketName);
 		System.out.println("connecting to servers");
 		Client client = new Client();
 		System.out.println("Connected to all Servers!");
-		while (true) {
-			System.out.println("1 - Enter File Name to Sort");
-			System.out.println("9 - Self Destruct");
-			System.out.print("Enter : ");
-			String line = din.readLine();
+		System.out.println("Informing servers to begin!");
+		client.callSorter(inputBucketName, outputBucketName);
 
-			if (line.equals("1")) {
-				client.callSorter(inputBucketName, outputBucketName);
-			} else if (line.equals("9")) {
-				client.killer();
-				System.out.println("Killed Server, Self Destruct!");
-				System.exit(0);
-			} else {
-				System.out.println("Invalid option");
-			}
-
-			System.out.println();
-		}
 	}
 }
