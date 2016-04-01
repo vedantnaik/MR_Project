@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -56,6 +57,9 @@ public class FileSystem {
 		
 		public static final String S3_OUTPUT_PART_TEMP_FILE = "s3OutputPartTemp";
 		public static final String MyS3BucketOuputPart_DistributedEC2Sort_FOLDER = "DistributedEC2Sort";
+		
+		// Checkpoint 2 : assuming the complete input data set is available locally (synched before program starts) 
+		public static final String S3_LOCAL_COPY = "s3LocalInput";
 	}
 	
 	String inputBucketName;
@@ -125,6 +129,44 @@ public class FileSystem {
 	 * 
 	 ****************************************************************/
 	
+	// Checkpoint 2
+	/**
+	 * Read all records from a file from the local copy of S3 input
+	 * */
+	
+	public static ArrayList<DataRecord> readInputDataRecordsFromLocalInputBucket(String fileObjectKey){
+		ArrayList<DataRecord> dataRecordList = new ArrayList<DataRecord>();
+		String fileToReadName = Constants.S3_LOCAL_COPY + "/" + fileObjectKey;
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(fileToReadName));
+			String fileLine;
+			
+			while(null != (fileLine = reader.readLine())){
+				String[] fields = fileLine.split(",");
+				
+				if(DataFileParser.isRecordValid(fields)){
+					double dryBulbTemp = Double.parseDouble(DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP));
+					
+					String wban = DataFileParser.getValueOf(fields, DataFileParser.Field.WBAN_NUMBER);
+					int date = Integer.parseInt(DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY));
+					String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
+					
+					dataRecordList.add(new DataRecord("", 0, 0, dryBulbTemp, wban, date, time));
+				}
+			}
+			
+			reader.close();
+		} catch (FileNotFoundException e) {
+			System.err.println("Unable to read local s3 copy of input file " + fileObjectKey);
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.err.println("Unable to read line from local s3 copy of input file " + fileObjectKey);
+			e.printStackTrace();
+		}
+		return dataRecordList;
+	}
+	
+	
 	/**
 	 * Read input files from input bucket which contain
 	 * Return list of DataRecords from that file
@@ -152,30 +194,17 @@ public class FileSystem {
 			// TODO: remove count condition to read all file
 			while((fileLine = buffered.readLine())!=null /*&& count < 10*/){
 				
-				// TODO: read line > csv > get offsets > get value > make DataRecord and return list
-
 				String[] fields = fileLine.split(",");
 				
 				if(DataFileParser.isRecordValid(fields)){
-//					System.out.println(offset + "\t:" + fileLine);
-//					System.out.println("\t\t\t DBT: " + DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP));
-					
-//					long recordFromOffset = offset;
-//					int recordLength = fileLine.length();
-//					sortValue
-					
 					double dryBulbTemp = Double.parseDouble(DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP));
 					
 					String wban = DataFileParser.getValueOf(fields, DataFileParser.Field.WBAN_NUMBER);
 					int date = Integer.parseInt(DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY));
 					String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
 					
-//					System.out.println("=========================================================");
-//					System.out.println("read record \t\t" + dryBulbTemp);
-//					System.out.println("=========================================================");
-					
-					dataRecordList.add(new DataRecord(fileObjectKey, offset, fileLine.length(), dryBulbTemp,
-														wban, date, time));
+					// Checkpoint 2
+					dataRecordList.add(new DataRecord("", 0, 0, dryBulbTemp, wban, date, time));
 					
 				}
 				offset = offset + fileLine.length() + 1;
@@ -411,6 +440,8 @@ public class FileSystem {
 	 * servers have finished the sample sort, and written the parts to a common
 	 * S3 bucket folder (using the method writePartsToOutputBucket above)
 	 * */
+	
+	// not used
 	
 	public static void printFinalOutputPartFiles(String outputBucketName, int topX){
 		
