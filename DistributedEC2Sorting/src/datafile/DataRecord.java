@@ -15,7 +15,6 @@ import utils.S3FileReader;
  * - value in the record which will be used to sort the dataset : value of Dry Bulb Temp field 
  * */
 
-
 public class DataRecord implements Serializable, Comparable<DataRecord>{
 
 	private static final long serialVersionUID = 1L;
@@ -23,6 +22,11 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	private long fromChar;
 	private int recordLength;
 	private double sortValue;
+	
+	// DATA RECORD COMPLETE VALUES
+	private String wban;
+	private int date;
+	private String time;
 	
 	// CONSTRUCTORS
 	public DataRecord(String fileName, long fromChar, int recordLength) {
@@ -43,8 +47,26 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 		this.fromChar = copyFrom.getFromChar();
 		this.recordLength = copyFrom.getRecordLength();
 		this.sortValue = copyFrom.getSortValue();
+		
+		this.wban = copyFrom.getWban();
+		this.date = copyFrom.getDate();
+		this.time = copyFrom.getTime();
 	}
 
+	// DATA RECORD COMPLETE VALUES
+	public DataRecord(String fileName, long fromChar, int recordLength, double sortValue,
+			String wban, int date, String time) {
+		this.fileName = fileName;
+		this.fromChar = fromChar;
+		this.recordLength = recordLength;
+		this.sortValue = sortValue;
+		
+		this.wban = wban;
+		this.date = date;
+		this.time = time;
+	}
+	
+	
 	// DataRecord Methods
 	
 	/**
@@ -77,6 +99,24 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 		return lineToRead;
 	}
 
+	public String readRecordFromS3(String inputBucketName) {
+		String[] fields = this.readRecord(inputBucketName).split(",");
+		String wban = DataFileParser.getValueOf(fields, DataFileParser.Field.WBAN_NUMBER);
+		String date = DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY);
+		String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
+		String dryBulbTemp = DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP);
+		return wban+","+date+","+time+","+dryBulbTemp;
+	}
+	
+	// DATA RECORD COMPLETE VALUES
+	/**
+	 * Read the complete record from this object and return as a string.
+	 * */
+	public String readRecordFromObject(){
+		return this.wban+","+this.date+","+this.time+","+this.sortValue;
+	}
+
+	
 	/**
 	 * Read the complete record from the file system and return as a string..
 	 * */
@@ -135,4 +175,32 @@ public class DataRecord implements Serializable, Comparable<DataRecord>{
 	public void setSortValue(double sortValue) {
 		this.sortValue = sortValue;
 	}
+
+	// DATA RECORD COMPLETE VALUES
+	public String getWban() {
+		return wban;
+	}
+
+	public void setWban(String wban) {
+		this.wban = wban;
+	}
+
+	public int getDate() {
+		return date;
+	}
+
+	public void setDate(int date) {
+		this.date = date;
+	}
+
+	public String getTime() {
+		return time;
+	}
+
+	public void setTime(String time) {
+		this.time = time;
+	}
+
+	
+	
 }

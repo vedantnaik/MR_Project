@@ -166,11 +166,17 @@ public class FileSystem {
 					
 					double dryBulbTemp = Double.parseDouble(DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP));
 					
+					String wban = DataFileParser.getValueOf(fields, DataFileParser.Field.WBAN_NUMBER);
+					int date = Integer.parseInt(DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY));
+					String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
+					
 //					System.out.println("=========================================================");
 //					System.out.println("read record \t\t" + dryBulbTemp);
 //					System.out.println("=========================================================");
 					
-					dataRecordList.add(new DataRecord(fileObjectKey, offset, fileLine.length(), dryBulbTemp));
+					dataRecordList.add(new DataRecord(fileObjectKey, offset, fileLine.length(), dryBulbTemp,
+														wban, date, time));
+					
 				}
 				offset = offset + fileLine.length() + 1;
 				count++;
@@ -363,14 +369,8 @@ public class FileSystem {
 			
 			System.out.println("writePartsToOutputBucket enter with " + sortedDataRecords.size());
 			for(DataRecord drToWrite : sortedDataRecords){
-				String[] fields = drToWrite.readRecord(this.inputBucketName).split(",");
-				
-				String wban = DataFileParser.getValueOf(fields, DataFileParser.Field.WBAN_NUMBER);
-				String date = DataFileParser.getValueOf(fields, DataFileParser.Field.YEARMONTHDAY);
-				String time = DataFileParser.getValueOf(fields, DataFileParser.Field.TIME);
-				String dryBulbTemp = DataFileParser.getValueOf(fields, DataFileParser.Field.DRY_BULB_TEMP);
-				
-				String outputInRequiredFormat = wban + ", " + date + ", " + time + ", " + dryBulbTemp + "\n";
+				String recordValues = drToWrite.readRecordFromObject();
+				String outputInRequiredFormat = recordValues + "\n";
 				
 //				System.out.println("writing " + outputInRequiredFormat);
 				bufWriter.write(outputInRequiredFormat);
