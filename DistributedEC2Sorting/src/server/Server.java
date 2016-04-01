@@ -256,23 +256,24 @@ public class Server implements Runnable {
 		// 1. calculate pivots
 		System.out.println("serverDataRecords size " + serverDataRecords.size());
 		int interval = serverDataRecords.size() / numberOfProcessors;
-		for (int i = numberOfProcessors; i < serverDataRecords.size() ; i += interval) {
-			System.out.println("Adding ");
-			pivArray.add(serverDataRecords.get(i).getSortValue());
-			System.out.println("added " + serverDataRecords.get(i).getSortValue());
+		int localcount = 1;
+		for (int i = numberOfProcessors; i < serverDataRecords.size() &&
+				localcount < numberOfProcessors ; i += interval) {			
+			pivArray.add(serverDataRecords.get(i).getSortValue());			
+			localcount++;
 		}
 		
 		System.out.println("my pivots are : " + pivArray);
 		dataRecordPivotsList.addAll(pivArray);
-		int localInterval = serverDataRecordPivotValuesList.size() / numberOfProcessors;
-		int localcount = 1;
+
 		// 2. Send calculated pivots from this server to server-0 (master)
 		if (serverNumber != 0) {
 			System.out.println("sending distributePivot#" + piv + " to " + FileSystem.getServerIPaddrMap().get(0));
 			outDist.get(0).writeBytes("distributePivot#start\n");
-			for(int i = localInterval; i < serverDataRecords.size() && 
-					localcount < numberOfProcessors	; i += localInterval){
-				outDist.get(0).writeBytes(serverDataRecords.get(i).getSortValue() + "\n");
+			for(Double d : dataRecordPivotsList){
+				System.out.println("local pivot");
+				outDist.get(0).writeBytes(d + "\n");
+				System.out.println("added local pivot" + d);
 				localcount++;
 			}
 			outDist.get(0).writeBytes("distributePivot#end\n");

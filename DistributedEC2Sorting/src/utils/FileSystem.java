@@ -334,6 +334,7 @@ public class FileSystem {
 //					System.out.println("read list " + readList + "");
 					// TODO: MAKE MERGER
 					myDataRecordList.addAll(readList);
+					// trying reset
 					ois.close();
 					fileStream.close();
 				}
