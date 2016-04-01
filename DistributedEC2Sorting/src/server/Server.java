@@ -137,7 +137,7 @@ public class Server implements Runnable {
 				synchronized (lock) {
 					DataOutputStream out = new DataOutputStream(
 							connection.getOutputStream());
-					System.out.println("received " + received);
+//					System.out.println("received " + received);
 					String[] receivedResult = { "", "" };
 
 					if (received.contains("#")) {

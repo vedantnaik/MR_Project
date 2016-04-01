@@ -4,7 +4,7 @@ echo "the bucket that will be created"
 echo $bucketName
 
 bucketName="distributedsort"
-inputBucket="climatesort"
+inputBucket="cs6240sp16"
 columnName=$1
 input=$2
 output=$3
