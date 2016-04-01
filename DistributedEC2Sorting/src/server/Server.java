@@ -50,6 +50,7 @@ public class Server implements Runnable {
 	// List of Sockets and OutputStream
 	private static Map<Integer, DataOutputStream> outDist = null;
 	private static Map<Integer, Socket> sendingSocketDist = null;
+	private static DataOutputStream outClient = null;
 	private static int totalServers;
 	
 	///// DataRecord sort from s3
@@ -135,6 +136,7 @@ public class Server implements Runnable {
 			while (true) {
 				String received = inFromClient.readLine();
 				synchronized (lock) {
+					if(null != received){
 					DataOutputStream out = new DataOutputStream(
 							connection.getOutputStream());
 //					System.out.println("received " + received);
@@ -159,6 +161,7 @@ public class Server implements Runnable {
 							
 							stage1_sort_my_partition();
 							receivingMyPartitionON = false;
+							outClient = out;
 							out.writeBytes("done#\n");
 							System.out.println("replied done# to client");
 						}
@@ -188,7 +191,7 @@ public class Server implements Runnable {
 						// specific part receiving phase
 						System.out.println("STAGE 5 : "
 								+ "mypart receiving stage");
-						stage5_mypart_receive_parts(receivedResult, out);
+						stage5_mypart_receive_parts(receivedResult, outClient);
 						
 					} else if (receivedResult[0].equals("kill")) {
 						System.out.println("KILLED!");
@@ -209,6 +212,7 @@ public class Server implements Runnable {
 						}
 					}
 					lock.notifyAll();
+				}
 				}
 			}
 		} catch (Exception e) {
@@ -424,7 +428,7 @@ public class Server implements Runnable {
 	 * 2. Sort complete record list
 	 * 3. Write final output to output S3 bucket
 	 * */
-	private void stage5_mypart_receive_parts(String[] receivedResult, DataOutputStream out) throws IOException, ClassNotFoundException {
+	private void stage5_mypart_receive_parts(String[] receivedResult, DataOutputStream outClient) throws IOException, ClassNotFoundException {
 		if(receivedResult[1].equals("start")){
 			System.out.println("STAGE 5: receiving my partitions");	
 			mypartON = true;
@@ -447,7 +451,7 @@ public class Server implements Runnable {
 				// 3. Write final output to output S3 bucket
 				MRFS.writePartsToOutputBucket(serverDataRecordsCache, serverNumber);
 				System.out.println("Written part files to output S3 bucket.");
-				out.writeBytes("finished"+ "\n");
+				outClient.writeBytes("finished"+ "\n");
 			}
 		}
 	}
