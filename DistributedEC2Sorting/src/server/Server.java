@@ -415,7 +415,10 @@ public class Server implements Runnable {
 				for(DataRecord i : drsToBeSent.get(serverNumber)){
 					serverDataRecordsCache.add(i);
 				}
-				
+				System.out.println("drsToBeSent set to null");
+				drsToBeSent = null;
+				System.out.println("serverDataRecords set to null");
+				serverDataRecords = null;
 				// useless now 
 				serversReplied = 0;
 				globalPivotON = false;
