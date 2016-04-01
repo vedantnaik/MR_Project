@@ -20,6 +20,7 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 
 import datafile.DataRecord;
+import sorter.LocalFSSorter;
 
 /**
  * Server program which listens on the port requested or passed in the URL.
@@ -67,6 +68,7 @@ public class Server implements Runnable {
 	
 	static FileSystem MRFS;
 	
+	static final String MYPARTS_SORTED_COMPLETE_FILE = "MYPARTS_SORTED_COMPLETE";
 	/////
 	
 
@@ -442,7 +444,9 @@ public class Server implements Runnable {
 
 				System.out.println("Begin sorting complete serverDataRecordsCache..." + serverDataRecordsCache.size());
 				// 1. Read this server partitions written from previous step to get complete record list
-				serverDataRecordsCache.addAll(MRFS.readMyParts(serverNumber));
+				LocalFSSorter.writeToTempCache((ArrayList<DataRecord>) serverDataRecordsCache, MYPARTS_SORTED_COMPLETE_FILE);
+				
+				MRFS.mergeMyParts(serverNumber, MYPARTS_SORTED_COMPLETE_FILE);
 				
 				// 2. Sort complete record list
 				Collections.sort(serverDataRecordsCache);

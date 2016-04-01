@@ -42,6 +42,7 @@ import com.jcraft.jsch.SftpException;
 
 import datafile.DataFileParser;
 import datafile.DataRecord;
+import sorter.LocalFSSorter;
 
 public class FileSystem {
 	
@@ -480,5 +481,30 @@ public class FileSystem {
 	// Getters and Setters
 	public static HashMap<Integer, String> getServerIPaddrMap() {
 		return serverIPaddrMap;
+	}
+
+	public void mergeMyParts(int serverNumber, String mergerFile) throws IOException, ClassNotFoundException {
+		
+		File folderIn = new File(Constants.SAMPLESORT_MY_PART_RELATIVE_FOLDER+"/");
+
+		System.out.println("Folder In : " + folderIn);
+		
+		if(null != folderIn){
+			for(File partFile : folderIn.listFiles()){
+				if(partFile.getName().contains("p"+serverNumber)){
+					System.out.println("Server "+serverNumber + " reading at " + partFile.getName());
+					FileInputStream fileStream = new FileInputStream(folderIn+"/"+partFile.getName());
+					ObjectInputStream ois = new ObjectInputStream(fileStream);
+					
+					ArrayList<DataRecord> readList = (ArrayList<DataRecord>) ois.readObject();
+					
+					LocalFSSorter.mergeWithTempCache(readList, mergerFile);
+					
+					// trying reset
+					ois.close();
+					fileStream.close();
+				}
+			}
+		}
 	}
 }
