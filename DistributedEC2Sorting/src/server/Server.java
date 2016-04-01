@@ -39,11 +39,11 @@ public class Server implements Runnable {
 	private static List<Double> dataRecordPivotsList = new ArrayList<Double>(1000);
 	private static List<Double> serverDataRecordPivotValuesList = new ArrayList<Double>();
 	private static List<Double> globalDataRecordPivotValuesList = new ArrayList<Double>();
-	private static List<Double> stage5ReadDataRecordList = new ArrayList<Double>(1000);
+//	private static List<Double> stage5ReadDataRecordList = new ArrayList<Double>(1000);
 	
 	private static boolean distributePivotON = false;
 	private static boolean globalPivotON = false;
-	private static boolean mypartON = false;
+
 	private static boolean receivingMyPartitionON = false;
 	static Object lock;
 
@@ -207,9 +207,7 @@ public class Server implements Runnable {
 						} else if (globalPivotON) {
 							System.out.println("adding to global pivot list " + receivedResult[0]);
 							globalDataRecordPivotValuesList.add(Double.parseDouble(receivedResult[0]));
-						} else if (mypartON) {
-							stage5ReadDataRecordList.add(Double.parseDouble(receivedResult[0]));
-						}
+						} 
 					}
 					lock.notifyAll();
 				}
@@ -361,7 +359,6 @@ public class Server implements Runnable {
 		if(receivedResult[1].equals("start")){
 			System.out.println("STAGE 4 : "
 					+ "Receive Global Pivots");	
-			globalPivotON = true;
 			// 1. Receive global pivots from server-0
 		}
 		
@@ -434,7 +431,7 @@ public class Server implements Runnable {
 	private void stage5_mypart_receive_parts(String[] receivedResult, DataOutputStream outClient) throws IOException, ClassNotFoundException {
 		if(receivedResult[1].equals("start")){
 			System.out.println("STAGE 5: receiving my partitions");	
-			mypartON = true;
+//			mypartON = true;
 		}
 		
 		if(receivedResult[1].equals("end")){
