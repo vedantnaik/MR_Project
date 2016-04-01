@@ -26,7 +26,7 @@ public class Client {
 	private static Map<Integer, Socket> sendingSocket = null;
 	private static Map<Integer, BufferedReader> inFromServer = null;
 	private static int totalServers;
-	
+	private String currentServer = null;
 	static FileSystem MRFS;
 	private static Map<Integer, String> servers;
 	
@@ -44,8 +44,9 @@ public class Client {
 			sendingSocket = new HashMap<>(2 * totalServers);
 			inFromServer = new HashMap<>(2 * totalServers);
 			System.out.println("servers are " + servers);
+			currentServer = null;
 			for (int i = 0; i < totalServers; i++) {
-
+				currentServer = servers.get(i);
 				sendingSocket.put(i, new Socket(servers.get(i), port));
 				Socket socketTmp = sendingSocket.get(i);
 				socketTmp.setSoTimeout(0);
@@ -57,8 +58,10 @@ public class Client {
 
 			}
 		} catch (IOException e) {
-			System.out.println("Unable to connect to all servers!");
+			System.out.println("Unable to connect to all servers! " + currentServer);
+			
 			e.printStackTrace();
+			System.exit(0);
 		}
 	}
 
