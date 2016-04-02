@@ -515,7 +515,7 @@ public class FileSystem {
 				+"/part-"+("00000" + serverNum).substring(serverNum.length());
 		System.out.println("writePartsToOutputBucket moving to s3 " + outputBucketName);
 		PutObjectResult result = s3client.putObject(new PutObjectRequest(this.outputBucketName, 
-				fileNameOnS3Bucket, mypartsSortedCompleteFile).withAccessControlList(acl));
+				fileNameOnS3Bucket, new File(mypartsSortedCompleteFile)).withAccessControlList(acl));
 		System.out.println("result1 " + result);			
 		
 		System.out.println("writePartsToOutputBucket moved to s3");

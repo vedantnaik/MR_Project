@@ -68,9 +68,9 @@ public class LocalFSSorterTester {
 		
 		
 		
-		for(DataRecord sdr : partsMap.get(2)){
-			System.out.println(sdr.getFileName() + "");
-		}
+//		for(DataRecord sdr : partsMap.get(2)){
+//			System.out.println(sdr.getFileName() + "");
+//		}
 		
 	}
 	

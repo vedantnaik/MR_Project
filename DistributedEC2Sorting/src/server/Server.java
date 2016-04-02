@@ -68,7 +68,7 @@ public class Server implements Runnable {
 	
 	static FileSystem MRFS;
 	
-	static final String MYPARTS_SORTED_COMPLETE_FILE = "MYPARTS_SORTED_COMPLETE";
+	static final String MYPARTS_SORTED_COMPLETE_FILE = "MYPARTSSORTEDCOMPLETE";
 	/////
 	
 
@@ -361,6 +361,7 @@ public class Server implements Runnable {
 		if(receivedResult[1].equals("start")){
 			System.out.println("STAGE 4 : "
 					+ "Receive Global Pivots");	
+			globalPivotON = true;	
 			// 1. Receive global pivots from server-0
 		}
 		
@@ -377,7 +378,8 @@ public class Server implements Runnable {
 				for(int i = 0; i < globalDataRecordPivotValuesList.size() + 1; i++){
 					drsToBeSent.add(i, new ArrayList<DataRecord>(1000));
 				}
-				System.out.println("Creating partitions for list of size " + serverDataRecords.size());
+				System.out.println("Creating partitions for list of size " + globalDataRecordPivotValuesList.size() 
+						+ " total records "+ serverDataRecords.size());
 				// 2. Create partitions of local data using global pivots
 				for (DataRecord drs : serverDataRecords) {
 					if (counterPivot == globalDataRecordPivotValuesList.size()) {
