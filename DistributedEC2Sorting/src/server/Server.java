@@ -103,6 +103,11 @@ public class Server implements Runnable {
 		inputFolder = args[3];
 		outputFolder = args[4];
 		
+		System.out.println("Input bucket: " + inputBucketName);
+		System.out.println("Output bucket: " + outputBucketName);
+		System.out.println("Input folder: " + inputFolder);
+		System.out.println("Output folder: " + outputFolder);
+		
 		MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
 	
 		lock = new Object();

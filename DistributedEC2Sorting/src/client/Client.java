@@ -215,6 +215,11 @@ public class Client {
 		String inputFolder = args[2];
 		String outputFolder = args[3];
 		
+		System.out.println("Input bucket: " + inputBucketName);
+		System.out.println("Output bucket: " + outputBucketName);
+		System.out.println("Input folder: " + inputFolder);
+		System.out.println("Output folder: " + outputFolder);
+		
 		System.out.println("Reading s3 bucket");
 		MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
 		System.out.println("connecting to servers");
