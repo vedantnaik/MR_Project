@@ -80,9 +80,9 @@ public class Client {
 	 * @param serverPort the server port eg. 1212
 	 * @throws IOException 
 	 */
-	public void callSorter(String inputBucketName, String outputBucketName) throws IOException {
+	public void callSorter(String inputBucketName, String outputBucketName, String inputFolder, String outputFolder) throws IOException {
 		
-		FileSystem myS3FS = new FileSystem(inputBucketName, outputBucketName);
+		FileSystem myS3FS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
 		
 		HashMap<Integer, ArrayList<String>> partsMap = myS3FS.getS3Parts(totalServers); 
 
@@ -203,7 +203,7 @@ public class Client {
 	 * @throws Exception
 	 */
 	public static void main(String args[]) throws Exception {
-		if (args.length != 2) {
+		if (args.length != 4) {
 			System.out
 					.println("Include Server IP Address. Currently only localhost!");
 			System.out.println("Usage Client <inputBucketname> <outputBucketName>");
@@ -212,14 +212,16 @@ public class Client {
 
 		String inputBucketName = args[0];
 		String outputBucketName = args[1];
+		String inputFolder = args[2];
+		String outputFolder = args[3];
 		
 		System.out.println("Reading s3 bucket");
-		MRFS = new FileSystem(inputBucketName, outputBucketName);
+		MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
 		System.out.println("connecting to servers");
 		Client client = new Client();
 		System.out.println("Connected to all Servers!");
 		System.out.println("Informing servers to begin!");
-		client.callSorter(inputBucketName, outputBucketName);
+		client.callSorter(inputBucketName, outputBucketName, inputFolder, outputFolder);
 
 	}
 }

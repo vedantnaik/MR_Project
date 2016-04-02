@@ -57,7 +57,7 @@ public class FileSystem {
 		public static final String SAMPLESORT_MY_PART_RELATIVE_FOLDER = "sampleSortMyParts";
 		
 		public static final String S3_OUTPUT_PART_TEMP_FILE = "s3OutputPartTemp";
-		public static final String MyS3BucketOuputPart_DistributedEC2Sort_FOLDER = "DistributedEC2Sort";
+//		public static final String MyS3BucketOuputPart_DistributedEC2Sort_FOLDER = "DistributedEC2Sort";
 		
 		// Checkpoint 2 : assuming the complete input data set is available locally (synched before program starts) 
 		public static final String S3_LOCAL_COPY = "s3LocalInput";
@@ -65,6 +65,10 @@ public class FileSystem {
 	
 	String inputBucketName;
 	String outputBucketName;
+	String inputFolder;
+	String outputFolder;
+	
+	
 	String fileObjectKey;
 	ArrayList<String> fileNameSizeList_GLOBAL;
 	static AWSCredentials credentials;
@@ -73,9 +77,11 @@ public class FileSystem {
 	// EC2 Specific data
 	public static HashMap<Integer, String> serverIPaddrMap;
 	
-	public FileSystem(String inputBucketName, String outputBucketName) throws IOException{
+	public FileSystem(String inputBucketName, String outputBucketName, String inputFolder1, String outputFolder1) throws IOException{
 		this.inputBucketName = inputBucketName;
 		this.outputBucketName = outputBucketName;
+		this.inputFolder = inputFolder1;
+		this.outputFolder = outputFolder1;
 		this.fileNameSizeList_GLOBAL = new ArrayList<String>();
 		
 		credentials = new ProfileCredentialsProvider().getCredentials();
@@ -91,16 +97,10 @@ public class FileSystem {
 		serverIPaddrMap = new HashMap<Integer, String>();
 		addIPaddrsFromPublicDnsFile();
 		
-		// TODO: REMOVE AFTER DEBUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		
-//		int debug_limitCount = 0;
-		
 		for(S3ObjectSummary objSum : objList.getObjectSummaries() ){
-			if(objSum.getKey().contains("climate") && objSum.getKey().contains("txt.gz")){
+			if(objSum.getKey().contains(this.inputFolder) && objSum.getKey().contains("txt.gz")){
 				this.fileNameSizeList_GLOBAL.add(objSum.getKey() + ":" + objSum.getSize());
-//				debug_limitCount++;
 			}
-//			if(debug_limitCount == 10) {break;}
 		}
 		
 	}
@@ -190,10 +190,7 @@ public class FileSystem {
 			
 			int offset = header.length() + 1;
 			
-			// TODO: REMOVE AFTER DEBUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			
-			// TODO: remove count condition to read all file
-			while((fileLine = buffered.readLine())!=null /*&& count < 10*/){
+			while((fileLine = buffered.readLine())!=null){
 				
 				String[] fields = fileLine.split(",");
 				
@@ -367,10 +364,7 @@ public class FileSystem {
 					ObjectInputStream ois = new ObjectInputStream(fileStream);
 					
 					ArrayList<DataRecord> readList = (ArrayList<DataRecord>) ois.readObject();
-//					System.out.println("read list " + readList + "");
-					// TODO: MAKE MERGER
 					myDataRecordList.addAll(readList);
-					// trying reset
 					ois.close();
 					fileStream.close();
 				}
@@ -402,7 +396,6 @@ public class FileSystem {
 				String recordValues = drToWrite.readRecordFromObject();
 				String outputInRequiredFormat = recordValues + "\n";
 				
-//				System.out.println("writing " + outputInRequiredFormat);
 				bufWriter.write(outputInRequiredFormat);
 			}
 			// 3. close streams and delete temp file
@@ -411,7 +404,7 @@ public class FileSystem {
 			System.out.println("writePartsToOutputBucket written to file " + tempFileToDelete.getName());
 			// 2. write to S3 bucket
 			String serverNum = fromServerNumber+"";
-			String fileNameOnS3Bucket = Constants.MyS3BucketOuputPart_DistributedEC2Sort_FOLDER
+			String fileNameOnS3Bucket = this.outputFolder
 											+"/part-"+("00000" + serverNum).substring(serverNum.length());
 			
 			System.out.println("writePartsToOutputBucket moving to s3 " + outputBucketName);
@@ -444,7 +437,7 @@ public class FileSystem {
 	
 	// not used
 	
-	public static void printFinalOutputPartFiles(String outputBucketName, int topX){
+	public void printFinalOutputPartFiles(String outputBucketName, int topX){
 		
 		try {
 			AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
@@ -452,7 +445,7 @@ public class FileSystem {
 			ObjectListing objList = s3client.listObjects(outputBucketName);
 			
 			for(S3ObjectSummary objSum : objList.getObjectSummaries() ){
-				if(objSum.getKey().contains(Constants.MyS3BucketOuputPart_DistributedEC2Sort_FOLDER + "part-")){
+				if(objSum.getKey().contains(this.outputFolder + "/part-")){
 					System.out.println("FILE: " + objSum.getKey());
 					
 					String fileToRead = objSum.getKey();
@@ -511,7 +504,7 @@ public class FileSystem {
 	public void writeCachePartsToOutputBucket(int serverNumber, String mypartsSortedCompleteFile) {
 
 		String serverNum = serverNumber+"";
-		String fileNameOnS3Bucket = Constants.MyS3BucketOuputPart_DistributedEC2Sort_FOLDER
+		String fileNameOnS3Bucket = this.outputFolder
 				+"/part-"+("00000" + serverNum).substring(serverNum.length());
 		System.out.println("writePartsToOutputBucket moving to s3 " + outputBucketName);
 		PutObjectResult result = s3client.putObject(new PutObjectRequest(this.outputBucketName, 

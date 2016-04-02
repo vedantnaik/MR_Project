@@ -144,18 +144,18 @@ public class LocalFSSorter {
 	
 	// Checkpoint 3
 	private static String makeWriteString(DataRecord drToWrite){
-		return drToWrite.getSortValue() + "," + drToWrite.getWban() + "," + drToWrite.getDate() 
-		+ "," + drToWrite.getTime() + "\n";
+		return  drToWrite.getWban() + "," + drToWrite.getDate() 
+		+ "," + drToWrite.getTime() + "," + drToWrite.getSortValue() + "\n";
 	}
 	
 	private static DataRecord getDataRecordFromWriteString(String line){
 		
 		try{
 			String[] fields = line.split(","); 
-			return new DataRecord(Double.parseDouble(fields[0]), 
-										fields[1], 
-										Integer.parseInt(fields[2]), 
-										fields[3]);
+			return new DataRecord(Double.parseDouble(fields[3]), 
+										fields[0], 
+										Integer.parseInt(fields[1]), 
+										fields[2]);
 		} catch (Exception e) {
 			System.out.println(line);
 			System.exit(1);
@@ -163,7 +163,6 @@ public class LocalFSSorter {
 		}
 	}
 	
-	// TODO: TEST
 	public static void mergeWithTempCache(ArrayList<DataRecord> recordsToAdd, String tempCacheFileName){
 		String mergerFileName = tempCacheFileName+"_merger";
 		

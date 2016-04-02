@@ -58,6 +58,9 @@ public class Server implements Runnable {
 	
 	private static String inputBucketName;
 	private static String outputBucketName;
+
+	private static String inputFolder;
+	private static String outputFolder;
 	
 	private static List<String> fileNameList = new ArrayList<String>(1000);
 	
@@ -90,14 +93,17 @@ public class Server implements Runnable {
 	}
 
 	public static void main(String args[]) throws Exception {
-		if (args.length != 3) {
+		if (args.length != 5) {
 			System.out.println("Syntax error: Include my Number");
 			System.out.println("Usage: Server <servernumber> <InputBucketName>");
 			System.exit(0);
 		}
 		inputBucketName = args[1];
 		outputBucketName = args[2];
-		MRFS = new FileSystem(inputBucketName, outputBucketName);
+		inputFolder = args[3];
+		outputFolder = args[4];
+		
+		MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
 	
 		lock = new Object();
 		serverNumber = Integer.parseInt(args[0]);
@@ -458,6 +464,7 @@ public class Server implements Runnable {
 				MRFS.writeCachePartsToOutputBucket(serverNumber, MYPARTS_SORTED_COMPLETE_FILE);
 				System.out.println("Written part files to output S3 bucket.");
 				outClient.writeBytes("finished"+ "\n");
+				System.out.println("Replied finished to client.");
 			}
 		}
 	}
