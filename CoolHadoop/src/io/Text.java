@@ -21,6 +21,7 @@ public class Text implements Serializable{
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
+		
 		return this.text;
 	}
 }
