@@ -5,5 +5,9 @@ DistributedEC2Sorting/bin/*
 DistributedEC2Sorting/.project
 DistributedEC2Sorting/.classpath
 DistributedEC2Sorting/.settings
+CoolHadoop/bin/*
+CoolHadoop/.project
+CoolHadoop/.classpath
+CoolHadoop/.settings
 
 
