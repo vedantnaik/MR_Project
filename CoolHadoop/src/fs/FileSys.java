@@ -14,6 +14,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 
 import com.amazonaws.auth.AWSCredentials;
@@ -23,6 +24,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 
+import coolmapreduce.Mapper;
 import io.Text;
 import utils.Constants;
 
@@ -155,11 +157,11 @@ public class FileSys {
 		// TODO: 2. Cater to multiple input files
 		
 		String fileToRead = "./input/"+jobName+"/reducer/"+key.toString()+"/values.txt";
-		
 		try {
 			FileInputStream fileStream = new FileInputStream(fileToRead);
 			ObjectInputStream ois = getOIS(fileStream);
 
+			
 			System.out.println(ois.readObject().toString());
 			System.out.println(ois.readObject().toString());
 		
@@ -172,7 +174,6 @@ public class FileSys {
 			System.err.println("Unable to deserialize the object from file : " + fileToRead);
 			e.printStackTrace();
 		}
-		
 		
 	}	
 	
@@ -212,7 +213,7 @@ public class FileSys {
 	 * http://stackoverflow.com/questions/2094637/how-can-i-append-to-an-existing-java-io-objectstream
 	 * */
 	
-	private static ObjectInputStream getOIS(FileInputStream fis)
+	public static ObjectInputStream getOIS(FileInputStream fis)
             throws IOException {
 		long pos = fis.getChannel().position();
 		return pos == 0 ? new ObjectInputStream(fis) : 
@@ -230,5 +231,8 @@ public class FileSys {
             // do not read a header
         }
     }
+	
+	
+	
 }
 

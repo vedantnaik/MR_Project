@@ -1,12 +1,14 @@
 package fs;
 
+import java.util.ArrayList;
+
 import io.Text;
 
 public class FileSysTester {
 
 	public static void main(String[] args) {
 		
-//		test_writeMapperValueToKeyFolder();
+		test_writeMapperValueToKeyFolder();
 		
 //		test_readMapperOutputForKey();
 		
@@ -27,11 +29,25 @@ public class FileSysTester {
 		Text key = new Text("key1");
 		String jobName = "testJob";
 		
-		Text value = new Text("value");
-		FileSys.writeMapperValueToKeyFolder(key, value, jobName);
 		
-		Text value2 = new Text("value2");
-		FileSys.writeMapperValueToKeyFolder(key, value2, jobName);		
+		
+		ArrayList<Text> vals = new ArrayList<Text>();
+		vals.add(new Text("value"));
+		vals.add(new Text("value1"));
+		vals.add(new Text("value2"));
+		vals.add(new Text("value3"));
+		vals.add(new Text("value4"));
+		vals.add(new Text("value5"));
+		vals.add(new Text("value6"));
+		vals.add(new Text("value7"));
+		vals.add(new Text("value8"));
+
+		for(Text v : vals){
+			FileSys.writeMapperValueToKeyFolder(key, v, jobName);
+			
+		}
+		
+		
 	}
 	
 	
