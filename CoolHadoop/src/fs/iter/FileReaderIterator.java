@@ -2,18 +2,23 @@ package fs.iter;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Iterator;
+import java.lang.Iterable;
 
 import fs.FileSys;
 import io.Text;
 
-public class FileReaderIterator implements Iterator<Text>{
+public class FileReaderIterator implements Iterable<Text>, Iterator<Text>{
 
 	ObjectInputStream ois;
+	File fileToRead;
+	Text cachedObj;
 	
 	public FileReaderIterator(File fileToRead) throws IOException {
+		this.fileToRead = fileToRead;
 		FileInputStream fileStream = new FileInputStream(fileToRead);
 		this.ois = FileSys.getOIS(fileStream);
 	}
@@ -21,30 +26,37 @@ public class FileReaderIterator implements Iterator<Text>{
 	@Override
 	public boolean hasNext() {
 		try {
-			System.out.println(ois.available() + " ");
-			return ois.available() > 0;
+			this.cachedObj = new Text(ois.readObject().toString());
+			return true;
 		} catch (IOException e) {
-			System.out.println("EXCEPTION");
+			return false;
+		} catch (ClassNotFoundException e) {
 			return false;
 		}
 	}
 
 	@Override
 	public Text next() {
-		try {
-			return new Text(ois.readObject().toString());
-		} catch (ClassNotFoundException e) {
-//			// TODO FIX THIS
-//			e.printStackTrace();
-		} catch (IOException e) {
-//			// TODO FIX THIS
-//			e.printStackTrace();
-		}
-		return null;
+		// TODO: make copy constructor
+		Text objToReturn = new Text(this.cachedObj.toString());
+		this.cachedObj = null;
+		return objToReturn;
 	}
 
 	@Override
 	public void remove() { throw new UnsupportedOperationException("Remove not supported by us!"); }
+
+	@Override
+	public Iterator<Text> iterator() {
+		FileInputStream fileStream;
+		try {
+			return new FileReaderIterator(this.fileToRead);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
 
 
 	

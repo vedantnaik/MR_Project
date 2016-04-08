@@ -17,12 +17,18 @@ public class FileReaderIteratorTester {
 		
 		FileReaderIterator iter = new FileReaderIterator(new File(fileToRead));
 		
-		Text readObj;
-		
-		while(null != (readObj = iter.next())){
-			System.out.println(readObj.toString());
-		}
+		// WORKS
+//		Text readObj;		
+//		while(null != (readObj = iter.next())){
+//			System.out.println(readObj.toString());
+//		}
 
+		
+		for(Text t : iter){
+			System.out.println("- " + t.toString());
+		}
+		
+		
 	}
 	
 }
