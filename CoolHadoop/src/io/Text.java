@@ -23,4 +23,8 @@ public class Text implements Serializable{
 		// TODO Auto-generated method stub
 		return this.text;
 	}
+	
+	public void set(String _text){
+		text = _text;
+	}
 }

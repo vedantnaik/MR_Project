@@ -26,5 +26,8 @@ public class IntWritable implements Serializable  {
 		return this.value;
 	}
 	
+	public void set(int _value){
+		value = _value;
+	}
 	
 }
