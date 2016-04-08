@@ -38,6 +38,7 @@ public class FileReaderIterator implements Iterable<Text>, Iterator<Text>{
 	@Override
 	public Text next() {
 		// TODO: make copy constructor
+		// 		find a better approach
 		Text objToReturn = new Text(this.cachedObj.toString());
 		this.cachedObj = null;
 		return objToReturn;

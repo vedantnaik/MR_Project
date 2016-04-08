@@ -12,7 +12,7 @@ public class FileInputFormat {
 	
 	//FileInputFormat.addInputPath(job, new Path(args[0]));
 	public static void addInputPath(Job myJob, Path inputPath){
-		myJob.getConf().set(Constants.INPUT_PATH_KEY, inputPath.toString());
+		myJob.getConf().set(Constants.CTX_INPUT_PATH_KEY, inputPath.toString());
 	}
 	
 	

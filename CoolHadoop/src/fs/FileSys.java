@@ -1,11 +1,13 @@
 package fs;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,6 +15,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
@@ -23,12 +26,35 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
 
+import coolmapreduce.Job;
 import coolmapreduce.Mapper;
+import fs.iter.FileReaderIterator;
 import io.Text;
 import utils.Constants;
 
 public class FileSys {
+	
+	
+	/********************************************************************************************
+	 * 
+	 * FileSys is intended to be used as a util class without instantiating
+	 * 
+	 * ******************************************************************************************/
+
+	
+	
+	/********************************************************************************************
+	 * 
+	 * 	S3 FILE OPERATIONS
+	 * 
+	 * ******************************************************************************************/
+
 	
 	/**
 	 * Read from S3 bucket
@@ -105,17 +131,101 @@ public class FileSys {
 	}
 	
 	
+	
+	
+	
+	/********************************************************************************************
+	 * 
+	 * FILE OPERATIONS BETWEEN TWO EC2 INSTANCES
+	 * 
+	 * ******************************************************************************************/
+
+	/**
+	 * @param
+	 * mapKey				:		key for which files are to be moved from this EC2 instance
+	 * foreignServerNumber	:		server number to where the source file is to be moved
+	 * 
+	 * This method moves the file from one EC2 instance to another
+	 * @throws SftpException 
+	 * @throws JSchException 
+	 * @throws IOException 
+	 * @throws SocketException 
+	 * */
+	public static void moveMapperTempFilesToReducers(int localServerNumber, String mapKey, int foreignServerNumber, Job currentJob) throws SocketException, IOException, JSchException, SftpException{
+		
+		String srcFilePath = Constants.RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE
+										.replace("<JOBNAME>", currentJob.getJobName())
+										.replace("<KEY>", mapKey)
+										.replace("<SERVERNUMBER>", localServerNumber + "");
+		
+		String destFilePath = Constants.ABSOLUTE_REDUCER_INPUT_FILE
+										.replace("<JOBNAME>", currentJob.getJobName())
+										.replace("<KEY>", mapKey)
+										.replace("<SERVERNUMBER>", localServerNumber + "");
+		
+		String destDns = currentJob.getConf().getServerIPaddrMap().get(new Integer(foreignServerNumber));
+		
+		scpCopy(srcFilePath, destFilePath, destDns);
+	}
+	
+	
+	/**
+	 * GIVEN	source filename
+	 * 			destination file path
+	 * 			destination EC2 instance's IP
+	 * Copies source file to destination on other server
+	 * */
+	// Reference : http://unix.stackexchange.com/questions/136165/java-code-to-copy-files-from-one-linux-machine-to-another-linux-machine
+	public static void scpCopy(String fsrc, String fdest, String destIP) throws SocketException, IOException, JSchException, SftpException{
+		JSch jsch = new JSch();
+		jsch.addIdentity(Constants.PEM_FILE_PATH);
+		
+		Session session = null;
+		session = jsch.getSession(Constants.EC2_USERNAME, destIP, Constants.SSH_PORT);
+		
+		session.setPassword("");
+		session.setConfig("StrictHostKeyChecking", "no");
+	    session.connect();
+		
+	    ChannelSftp channel = null;
+		channel = (ChannelSftp)session.openChannel("sftp");
+		channel.connect();
+		
+//		File localFile = new File(fsrc);
+//		System.out.println("local file to copy name : " + fsrc + " localFileName " + localFile.getName());
+//		channel.put("sampleSortPartTemp/"+localFile.getName() , "Project/sampleSortMyParts/"+localFile.getName());
+		
+		channel.put(fsrc, fdest);
+	    
+		channel.disconnect();
+		session.disconnect();
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	/********************************************************************************************
+	 * 
+	 * 	LOCAL FILE OPERATIONS:
+	 * 
+	 * ******************************************************************************************/
+	
 	/**
 	 * Write local file
 	 * USAGE: recording output form Mapper : context.write 
 	 *  
 	 * ./output/<JOBNAME>/mapper/<KEY>/values.txt
 	 * */
-	public static void writeMapperValueToKeyFolder(Text key, Text value, String jobName){
+	public static void writeMapperValueToKeyFolder(Text key, Text value, String jobName, int localServerNumber){
 		
-		String fileNameToWriteIn = Constants.MAPPER_CONTEXT_OUTPUT_FILE
+		String fileNameToWriteIn = Constants.RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE
 									.replace("<JOBNAME>", jobName)
-									.replace("<KEY>", key.toString());
+									.replace("<KEY>", key.toString())
+									.replace("<SERVERNUMBER>", localServerNumber + "");
 		
 		File folderToWriteIn = new File(fileNameToWriteIn.replace("/values.txt", ""));
 		if(!folderToWriteIn.isDirectory()){
@@ -145,18 +255,19 @@ public class FileSys {
 	}
 
 	/**
-	 * Read from local file
-	 * Assuming moved all temp files to this EC2 instance's folder structure
-	 * ./input/<JOBNAME>/reducer/<KEY>/values-<serverNumber>.txt
+	 * Read from local file Constants.RELATIVE_COMBINED_REDUCER_INPUT_FILE
+	 * 
+	 * Assuming the values<SERVERNUMBER>.txt files are all combined to values.txt
 	 * 
 	 * USAGE: Feeding input to reduce  
 	 *  
 	 * */
-	public static void readMapperOutputForKey(Text key, String jobName){
-		// TODO: 1. Add filepath to constants
-		// TODO: 2. Cater to multiple input files
+	public static void readMapperOutputForKey(Text key, String jobName, int localServerNumber){
 		
-		String fileToRead = "./input/"+jobName+"/reducer/"+key.toString()+"/values.txt";
+		String fileToRead = Constants.RELATIVE_COMBINED_REDUCER_INPUT_FILE
+									.replace("<JOBNAME>", jobName)
+									.replace("<KEY>", key.toString());
+				
 		try {
 			FileInputStream fileStream = new FileInputStream(fileToRead);
 			ObjectInputStream ois = getOIS(fileStream);
@@ -176,6 +287,61 @@ public class FileSys {
 		}
 		
 	}	
+	
+	
+	/**
+	 * reducerInputFilesCombiner
+	 * 
+	 * combine all 
+	 *  RELATIVE_REDUCER_INPUT_FILE = "./input/<JOBNAME>/reducer/<KEY>/values<SERVERNUMBER>.txt"
+	 * to 
+	 *  RELATIVE_COMBINED_REDUCER_INPUT_FILE = "./input/<JOBNAME>/reducer/<KEY>/values.txt";
+	 *  
+	 * deletes reducer input files
+	 * @throws IOException 
+	 * 
+	 * 
+	 * */
+	
+	public static void combineReducerInputFiles(Text key, int localServerNumber) throws IOException{
+		
+		File reducerInputFolder = new File(Constants.RELATIVE_REDUCER_INPUT_FOLDER);
+		
+		File finalValuesFile = new File(Constants.RELATIVE_COMBINED_REDUCER_INPUT_FILE);
+		ObjectOutputStream finalOOS = getOOS(finalValuesFile);
+		
+		for (File valuesFile : reducerInputFolder.listFiles()){
+				// for each file
+					// for each object, write to finalOOS
+			FileReaderIterator valuesIter = new FileReaderIterator(valuesFile); 
+			
+			for(Text valueObject : valuesIter){
+				
+			}
+			
+		}
+	    	
+		
+		
+//		Text key = new Text("key1");
+//		String jobName = "testJob";
+//		String fileToRead = "./input/"+jobName+"/reducer/"+key.toString()+"/values.txt";
+//		
+//		
+//		FileReaderIterator iter = new FileReaderIterator(new File(fileToRead));
+//		
+//		// WORKS
+////		Text readObj;		
+////		while(null != (readObj = iter.next())){
+////			System.out.println(readObj.toString());
+////		}
+//
+//		
+//		for(Text t : iter){
+//			System.out.println("- " + t.toString());
+//		}
+//		
+	}
 	
 	
 	

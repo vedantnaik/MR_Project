@@ -19,4 +19,11 @@ public class ReducerHandeler {
 	 * 
 	 * */
 	
+	
+	public void moveAndMergeTempOutput(){
+		
+		
+		
+	}
+	
 }

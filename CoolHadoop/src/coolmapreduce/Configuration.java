@@ -12,13 +12,6 @@ import utils.Constants;
 public class Configuration {
 	
 	private static HashMap<Integer, String> serverIPaddrMap;
-	
-	// Input
-	
-	private static Path inputPath;
-	private static Path outputPath;
-	// TODO: confMap
-	
 	private static HashMap<String, String> confMap = new HashMap<String, String>();
 	
 	
@@ -90,30 +83,6 @@ public class Configuration {
 		Configuration.serverIPaddrMap = serverIPaddrMap;
 	}
 	
-	public static Path getInputPath() {
-		return inputPath;
-	}
-
-
-
-	public static void setInputPath(Path inputPath) {
-		Configuration.inputPath = inputPath;
-	}
-
-
-
-	public static Path getOutputPath() {
-		return outputPath;
-	}
-
-
-
-	public static void setOutputPath(Path outputPath) {
-		Configuration.outputPath = outputPath;
-	}
-
-
-
 	
 	
 }
