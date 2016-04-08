@@ -227,7 +227,8 @@ public class FileSys {
 									.replace("<KEY>", key.toString())
 									.replace("<SERVERNUMBER>", localServerNumber + "");
 		
-		File folderToWriteIn = new File(fileNameToWriteIn.replace("/values.txt", ""));
+		String valuesFileName = "/values"+localServerNumber+".txt";
+		File folderToWriteIn = new File(fileNameToWriteIn.replace(valuesFileName, ""));
 		if(!folderToWriteIn.isDirectory()){
 			folderToWriteIn.mkdir();
 			try {
@@ -260,32 +261,40 @@ public class FileSys {
 	 * Assuming the values<SERVERNUMBER>.txt files are all combined to values.txt
 	 * 
 	 * USAGE: Feeding input to reduce  
-	 *  
+	 * 
+	 * @return
+	 * An iterator to traverse that file
+	 * @throws IOException 
+	 * 
 	 * */
-	public static void readMapperOutputForKey(Text key, String jobName, int localServerNumber){
+	public static Iterator<Text> readMapperOutputForKey(Text key, String jobName, int localServerNumber) throws IOException{
 		
 		String fileToRead = Constants.RELATIVE_COMBINED_REDUCER_INPUT_FILE
 									.replace("<JOBNAME>", jobName)
-									.replace("<KEY>", key.toString());
-				
-		try {
-			FileInputStream fileStream = new FileInputStream(fileToRead);
-			ObjectInputStream ois = getOIS(fileStream);
+									.replace("<KEY>", key.toString());				
 
-			
-			System.out.println(ois.readObject().toString());
-			System.out.println(ois.readObject().toString());
+		FileReaderIterator iter = new FileReaderIterator(new File(fileToRead));
+
+		return iter;
 		
-			ois.close();
-			fileStream.close();
-		} catch (IOException e) {
-			System.err.println("Unable to read temp output from Mapper. File: " + fileToRead);
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			System.err.println("Unable to deserialize the object from file : " + fileToRead);
-			e.printStackTrace();
-		}
-		
+//		try {
+//			FileInputStream fileStream = new FileInputStream(fileToRead);
+//			ObjectInputStream ois = getOIS(fileStream);
+//
+//			
+//			System.out.println(ois.readObject().toString());
+//			System.out.println(ois.readObject().toString());
+//		
+//			ois.close();
+//			fileStream.close();
+//		} catch (IOException e) {
+//			System.err.println("Unable to read temp output from Mapper. File: " + fileToRead);
+//			e.printStackTrace();
+//		} catch (ClassNotFoundException e) {
+//			System.err.println("Unable to deserialize the object from file : " + fileToRead);
+//			e.printStackTrace();
+//		}
+//		
 	}	
 	
 	
@@ -303,44 +312,30 @@ public class FileSys {
 	 * 
 	 * */
 	
-	public static void combineReducerInputFiles(Text key, int localServerNumber) throws IOException{
+	public static void combineReducerInputFiles(Text key, String jobName, int localServerNumber) throws IOException{
 		
-		File reducerInputFolder = new File(Constants.RELATIVE_REDUCER_INPUT_FOLDER);
+		File reducerInputFolder = new File(Constants.RELATIVE_REDUCER_INPUT_FOLDER
+												.replace("<JOBNAME>", jobName)
+												.replace("<KEY>", key.toString()));
 		
-		File finalValuesFile = new File(Constants.RELATIVE_COMBINED_REDUCER_INPUT_FILE);
-		ObjectOutputStream finalOOS = getOOS(finalValuesFile);
 		
+		
+		File finalValuesFile = new File(Constants.RELATIVE_COMBINED_REDUCER_INPUT_FILE
+												.replace("<JOBNAME>", jobName)
+												.replace("<KEY>", key.toString()));
+		
+		ObjectOutputStream finalOOS = null;
 		for (File valuesFile : reducerInputFolder.listFiles()){
-				// for each file
-					// for each object, write to finalOOS
 			FileReaderIterator valuesIter = new FileReaderIterator(valuesFile); 
 			
 			for(Text valueObject : valuesIter){
-				
+				finalOOS = getOOS(finalValuesFile);
+				finalOOS.writeObject(valueObject);
 			}
 			
+			valuesFile.delete();
 		}
-	    	
-		
-		
-//		Text key = new Text("key1");
-//		String jobName = "testJob";
-//		String fileToRead = "./input/"+jobName+"/reducer/"+key.toString()+"/values.txt";
-//		
-//		
-//		FileReaderIterator iter = new FileReaderIterator(new File(fileToRead));
-//		
-//		// WORKS
-////		Text readObj;		
-////		while(null != (readObj = iter.next())){
-////			System.out.println(readObj.toString());
-////		}
-//
-//		
-//		for(Text t : iter){
-//			System.out.println("- " + t.toString());
-//		}
-//		
+		finalOOS.close();
 	}
 	
 	

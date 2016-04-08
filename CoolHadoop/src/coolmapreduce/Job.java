@@ -16,7 +16,7 @@ public class Job {
 	//This will have getInstance which takes config object
 	private Job(){}
 	
-	public static Job getInstace(Configuration _conf){
+	public static Job getInstance(Configuration _conf){
 		if(ref == null) {
 			ref = new Job();
 		}
