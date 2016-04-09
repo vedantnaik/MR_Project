@@ -3,7 +3,6 @@ package coolmapreduce;
 import io.Text;
 
 import java.io.File;
-
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -102,7 +101,9 @@ public class MapperHandler implements Runnable {
 					contextClass);
 
 			for (String line : FileSys
-					.readInputStringsFromLocalInputBucket(file.getPath())) {
+					.readInputStringsFromLocalInputBucket(
+							Job.getConf().get(Constants.INPUT_BUCKET_NAME),
+							file.getPath())) {
 
 				// System.out.println("Reading " + line);
 

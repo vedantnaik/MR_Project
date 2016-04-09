@@ -128,14 +128,6 @@ public class FileSys {
 		return dataRecordList;
 	}
 	
-	public static List<String> readInputStringsFromLocalInputBucket(String path){
-		String[] pathArray = new String[2];
-		pathArray[0] = path.substring(0, path.lastIndexOf('\\'));
-		pathArray[1] = path.substring(path.lastIndexOf('\\')+1, path.length());
-		return readInputStringsFromLocalInputBucket(pathArray[0], pathArray[1]);
-	}
-	
-	
 	
 	/********************************************************************************************
 	 * 

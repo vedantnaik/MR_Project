@@ -7,7 +7,7 @@ public class Constants {
 	// confMap keys
 	public static final String CTX_INPUT_PATH_KEY = "INPUT_PATH";
 	public static final String CTX_OUTPUT_PATH_KEY = "OUTPUT_PATH";
-
+	public static final String INPUT_BUCKET_NAME = "INPUT_BUCKET_NAME";
 	
 	
 	
@@ -42,6 +42,8 @@ public class Constants {
 	public static final String START = "START";
 	public static final String END = "END";
 	
+	public static final String MAPFAILURE = "MAPFAILURE";
+	public static final Object LOCAL = "LOCAL";
 	
 	
 	
@@ -53,8 +55,12 @@ public class Constants {
 	public static final String RUNNING = "RUNNING";
 
 	public static final String MAP_FINISH = "MAP_FINISH";
+	public static final String NEED_TO_STARTING_MAP = "NEED_TO_STARTING_MAP";
 
-	public static final String STARTING_MAP = "STARTING_MAP";
+	public static final String START_MAP = "START_MAP";
+
+	public static final String FILES_READ = "FILES_READ";
+
 
 	
 	/**
