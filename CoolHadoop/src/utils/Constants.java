@@ -17,7 +17,8 @@ public class Constants {
 	public static final String UNIX_FILE_SEPARATOR = "/";
 	public static final String RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE = "./output/<JOBNAME>/mapper/<KEY>/values<SERVERNUMBER>.txt";
 	public static final String ABSOLUTE_MAPPER_CONTEXT_OUTPUT_FILE = "~/Project/output/<JOBNAME>/mapper/<KEY>/values<SERVERNUMBER>.txt";
-
+	
+	
 	
 	// --	Reducer
 	public static final String RELATIVE_REDUCER_INPUT_FOLDER = "./input/<JOBNAME>/reducer/<KEY>/";
@@ -36,6 +37,15 @@ public class Constants {
 	public static final int SSH_PORT = 22;
 	
 	
+	
+	// Phases
+	
+	public static final String OUR_INIT = "OUR_INIT";
+	public static final String SETUP = "SETUP";
+	public static final String CLEANUP = "CLEANUP";
+	public static final String RUNNING = "RUNNING";
+
+	public static final String MAP_FINISH = "MAP_FINISH";
 	
 	/**
 	 * Folders to make

@@ -30,4 +30,9 @@ public class IntWritable implements Serializable  {
 		value = _value;
 	}
 	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return value+"";
+	}
 }

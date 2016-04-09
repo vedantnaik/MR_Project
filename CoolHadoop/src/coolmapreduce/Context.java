@@ -11,6 +11,12 @@ public class Context {
 	
 	
 	/**
+	 * TODO: 
+	 * Context should write based on the 
+	 * map's output key and map's output value
+	 */
+	
+	/**
 	 * .write from Reducer
 	 * - write the values into files in tab separated format
 	 * 		KEY+"\t"+VALUE

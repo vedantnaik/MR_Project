@@ -38,7 +38,7 @@ public class WordCount {
 		  
 		  @Override
 		public void setup(Context context) {
-			  System.out.println("insetup");
+			  System.out.println("in setup");
 			super.setup(context);
 		}
 
@@ -50,7 +50,7 @@ public class WordCount {
 	      StringTokenizer itr = new StringTokenizer(value.toString());
 	      while (itr.hasMoreTokens()) {
 	        word.set(itr.nextToken());
-	        System.out.println("word is " + word + " with " + one);
+	        System.out.println(word + "," + one);
 //	        context.write(word, one);
 	      }
 	    }
@@ -58,7 +58,7 @@ public class WordCount {
 	    @Override
 	    public void cleanup(Context context) {
 	    	// TODO Auto-generated method stub
-	    	System.out.println("incleanup");
+	    	System.out.println("in cleanup");
 	    	super.cleanup(context);
 	    }
 	  }

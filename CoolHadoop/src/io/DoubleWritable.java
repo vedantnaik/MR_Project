@@ -25,5 +25,9 @@ public class DoubleWritable implements Serializable  {
 		return this.value;
 	}
 	
-	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return value+"";
+	}
 }
