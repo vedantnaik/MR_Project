@@ -39,7 +39,7 @@ public class WordCount {
 		  @Override
 		public void setup(Context context) {
 			  System.out.println("in setup");
-			super.setup(context);
+//			super.setup(context);
 		}
 
 	    private final static IntWritable one = new IntWritable(1);
@@ -59,27 +59,39 @@ public class WordCount {
 	    public void cleanup(Context context) {
 	    	// TODO Auto-generated method stub
 	    	System.out.println("in cleanup");
-	    	super.cleanup(context);
+//	    	super.cleanup(context);
 	    }
 	  }
 	  
 	  
 
-//	  public static class IntSumReducer
-//	       extends Reducer<Text,IntWritable,Text,IntWritable> {
-//	    private IntWritable result = new IntWritable();
-//
-//	    public void reduce(Text key, Iterable<IntWritable> values,
-//	                       Context context
-//	                       ) throws IOException, InterruptedException {
-//	      int sum = 0;
-//	      for (IntWritable val : values) {
-//	        sum += val.get();
-//	      }
-//	      result.set(sum);
-////	      context.write(key, result);
-//	    }
-//	  }
+	  public static class IntSumReducer
+	       extends Reducer<Text,IntWritable,Text,IntWritable> {
+	    private IntWritable result = new IntWritable();
+
+	    public void reduce(Text key, Iterable<IntWritable> values,
+	                       Context context
+	                       ) throws IOException, InterruptedException {
+	      int sum = 0;
+	      for (IntWritable val : values) {
+	        sum += val.get();
+	      }
+	      result.set(sum);
+//	      context.write(key, result);
+	    }
+
+		@Override
+		public void setup(Context context) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void cleanup(Context context) {
+			// TODO Auto-generated method stub
+			
+		}
+	  }
 
 	  public static void main(String[] args) throws Exception {
 	    Configuration conf = new Configuration();

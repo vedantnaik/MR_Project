@@ -17,6 +17,20 @@ public class Context {
 	 */
 	
 	/**
+	 * TODO:
+	 * if we want super.setup and
+	 * super.cleanup we'll need to either stub them 
+	 * and set the context there, else pass from Job
+	 * to context(in MapperHandler) and then call 
+	 * super.setup to set it there.
+	 * 
+	 *  OR
+	 *  
+	 *  stub them and not implement since, its 
+	 *  not required to implement  
+	 */
+	
+	/**
 	 * .write from Reducer
 	 * - write the values into files in tab separated format
 	 * 		KEY+"\t"+VALUE
