@@ -35,6 +35,13 @@ public class Constants {
 
 	public static final String EC2_USERNAME = "ubuntu";
 	public static final int SSH_PORT = 22;
+	public static final String MAPFILES = "MAP_FILES";
+	
+	public static final String MAP = "MAP";	
+	public static final String REDUCE = "REDUCE";	
+	public static final String START = "START";
+	public static final String END = "END";
+	
 	
 	
 	
@@ -46,6 +53,9 @@ public class Constants {
 	public static final String RUNNING = "RUNNING";
 
 	public static final String MAP_FINISH = "MAP_FINISH";
+
+	public static final String STARTING_MAP = "STARTING_MAP";
+
 	
 	/**
 	 * Folders to make

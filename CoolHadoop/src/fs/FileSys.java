@@ -1,24 +1,26 @@
 package fs;
 
+import fs.iter.FileReaderIterator;
+import io.Text;
+
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
+
+import utils.Constants;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
@@ -33,10 +35,6 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
 import coolmapreduce.Job;
-import coolmapreduce.Mapper;
-import fs.iter.FileReaderIterator;
-import io.Text;
-import utils.Constants;
 
 public class FileSys {
 	
@@ -130,7 +128,12 @@ public class FileSys {
 		return dataRecordList;
 	}
 	
-	
+	public static List<String> readInputStringsFromLocalInputBucket(String path){
+		String[] pathArray = new String[2];
+		pathArray[0] = path.substring(0, path.lastIndexOf('\\'));
+		pathArray[1] = path.substring(path.lastIndexOf('\\')+1, path.length());
+		return readInputStringsFromLocalInputBucket(pathArray[0], pathArray[1]);
+	}
 	
 	
 	
