@@ -24,7 +24,7 @@ public class FileReaderIteratorTester {
 //		}
 
 		
-		for(Text t : iter){
+		for(Object t : iter){
 			System.out.println("- " + t.toString());
 		}
 		

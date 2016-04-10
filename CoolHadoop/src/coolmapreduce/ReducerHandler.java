@@ -6,6 +6,8 @@ import java.util.List;
 
 import fs.FileSys;
 import utils.Constants;
+import io.IntWritable;
+import io.LongWritable;
 import io.Text;
 
 public class ReducerHandler {
@@ -87,7 +89,7 @@ public class ReducerHandler {
 		// iterate over the keys and call reduce for each key
 		for (int i = 0; i < total ; i++) {
 			// right now dummy key1
-			reducerHandlerRun(new Text("key1"));
+			reducerHandlerRun(new Text("the"));
 			phase = Constants.RUNNING + " " + (i * 100.0) / total;
 		}
 
@@ -129,7 +131,7 @@ public class ReducerHandler {
 			
 			// setting anything except Text if MapOutputKeyClass()
 			if(null != currentJob.getMapOutputKeyClass())
-			keyInClass = currentJob.getMapOutputKeyClass();		
+				keyInClass = currentJob.getMapOutputKeyClass();		
 				
 			// setting anything except Text if MapOutputValueClass
 			if(null != currentJob.getMapOutputValueClass())
@@ -162,7 +164,7 @@ public class ReducerHandler {
 
 
 				 System.out.println("Reduce call for key " + key);
-				Iterable iter = (Iterable) FileSys.readMapperOutputForKey(key, currentJob.getJobName(), 0);
+				Iterable<IntWritable> iter = (Iterable<IntWritable>) FileSys.readMapperOutputForKey(key, currentJob.getJobName(), 0);
 				
 				// give context variable
 				reduce.invoke(objectInstance, key, iter,

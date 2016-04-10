@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import coolmapreduce.Job;
 import fs.iter.FileReaderIterator;
 import io.Text;
 
@@ -12,7 +13,12 @@ public class FileSysTester {
 	public static void main(String[] args) {
 		
 //		test_writeMapperValueToKeyFolder();
-
+		
+		
+		Job job = Job.getInstance(null);
+		job.setJobName("testJob");
+//		FileSys.moveMapperTempFilesToLocalReducer("key1", 2, job);
+		
 //		test_combineReducerInputFiles();
 		
 		test_readMapperOutputForKey();

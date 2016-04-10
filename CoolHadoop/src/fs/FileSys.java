@@ -276,7 +276,7 @@ public class FileSys {
 	 * @throws IOException 
 	 * 
 	 * */
-	public static Iterator<Text> readMapperOutputForKey(Text key, String jobName, int localServerNumber) throws IOException{
+	public static Iterator<Object> readMapperOutputForKey(Text key, String jobName, int localServerNumber) throws IOException{
 		
 		String fileToRead = Constants.RELATIVE_COMBINED_REDUCER_INPUT_FILE
 									.replace("<JOBNAME>", jobName)
@@ -319,7 +319,7 @@ public class FileSys {
 		for (File valuesFile : reducerInputFolder.listFiles()){
 			FileReaderIterator valuesIter = new FileReaderIterator(valuesFile); 
 			
-			for(Text valueObject : valuesIter){
+			for(Object valueObject : valuesIter){
 				finalOOS = getOOS(finalValuesFile);
 				finalOOS.writeObject(valueObject);
 			}
