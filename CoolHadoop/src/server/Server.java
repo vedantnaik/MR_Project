@@ -14,7 +14,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+
+
+import client.Client;
 import utils.Constants;
+import word.count.WordCount.TokenizerMapper;
 import coolmapreduce.Configuration;
 import coolmapreduce.Job;
 import coolmapreduce.MapperHandler;
@@ -53,42 +58,48 @@ public class Server implements Runnable {
 	private static DataOutputStream outClient = null;
 	private static int totalServers;
 
-	
+	private static MapperHandler mapperhandlerInstance = null;
+	private static Map<Job, MapperHandler> mapOfMapperHandlers = null;
+
 	private static String inputBucketName;
 	private static String outputBucketName;
 
 	private static String inputFolder;
 	private static String outputFolder;
 	
-	private static List<File> fileNameList = new ArrayList<File>(100);
+	private static List<String> fileNameList = new ArrayList<String>(100);
 	
 	private static Configuration config;
 	private static Job job;
-	private static String localServers;
+	private static String localServers = "NO"; 
 
 	public Server(Socket newConnection) throws UnknownHostException,
 			IOException {
 		this.connection = newConnection;
 		
 		if(localServers != null && localServers.equals(Constants.LOCAL))
-			initOtherSockets();
-		else
 			initLocalOtherSockets();
+		else
+			initOtherSockets();
 	}
 
 	public void initLocalOtherSockets() throws UnknownHostException,
 			IOException {
+		System.out.println("Init local Sockets");
+		// hacking localport 
+		int localport = port - serverNumber;
 		for (int i = 0; i < totalServers; i++) {
 			if (outDist.get(i) == null) {
-				sendingSocketDist.put(i, new Socket("localhost", port + serverNumber));
+				System.out.println("Connecting to " + i + " @ " + (localport + i));
+				sendingSocketDist.put(i, new Socket("localhost", (localport + i)));
 				outDist.put(i, new DataOutputStream(
 						sendingSocketDist.get(i).getOutputStream()));
 			}
-		}
-		
+		}		
 	}
 
 	public void initOtherSockets() throws UnknownHostException, IOException {
+		System.out.println("Init Sockets");
 		for (int i = 0; i < totalServers; i++) {
 			if (outDist.get(i) == null) {
 				sendingSocketDist.put(i, new Socket(Configuration.getServerIPaddrMap().get(i), port));
@@ -99,41 +110,66 @@ public class Server implements Runnable {
 	}
 
 	public static void main(String args[]) throws Exception {
-		if (args.length != 6) {
+		if (args.length < 5) {
 			System.out.println("Syntax error: Include my Number");
-			System.out.println("Usage: Server <servernumber> <InputBucketName>");
+			System.out
+					.println("Usage: Server <servernumber> <InputBucketName>"
+							+ "<outputBucketName> <inputFolder> <outputFolder> <LOCAL/nothing>");
+			System.out.println("Server 0 some some some some LOCAL");
+			System.out.println("or");
+			System.out.println("Server 0 some some some some");
 			System.exit(0);
 		}
+		serverNumber = Integer.parseInt(args[0]);
 		inputBucketName = args[1];
 		outputBucketName = args[2];
 		inputFolder = args[3];
 		outputFolder = args[4];
-		localServers = args[5];
-		
+		if(args.length > 5)
+			localServers = args[5];
+
 		System.out.println("Input bucket: " + inputBucketName);
 		System.out.println("Output bucket: " + outputBucketName);
 		System.out.println("Input folder: " + inputFolder);
 		System.out.println("Output folder: " + outputFolder);
+		System.out.println("Running Local? : " + localServers);
+
+		// MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder,
+		// outputFolder);
 		
-//		MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
 		config = new Configuration();
+
+		// REMOVE1 : for now before sending Job
+		config.set(Constants.INPUT_BUCKET_NAME, Client.PATH);
+		job = Job.getInstance(config);
+		job.setMapperClass(TokenizerMapper.class);
+		
+		// REMOVE1 : remove till here 
 		job = Job.getInstance(config);
 		lock = new Object();
 		replied = new boolean[totalServers];
-		serverNumber = Integer.parseInt(args[0]);
 
 		totalServers = Configuration.getServerIPaddrMap().size();
 		numberOfProcessors = totalServers;
-		System.out.println("totalServers " + Configuration.getServerIPaddrMap().size());
+		System.out.println("totalServers "
+				+ Configuration.getServerIPaddrMap().size());
 		outDist = new HashMap<>(2 * totalServers);
 		sendingSocketDist = new HashMap<>(2 * totalServers);
-		
-		System.out.println("servers to connect to : " + Configuration.getServerIPaddrMap());
-		System.out.println("Started Server " + serverNumber + " @ " + port);
+
+		System.out.println("servers to connect to : "
+				+ Configuration.getServerIPaddrMap());
+
+		if (localServers != null && localServers.equals(Constants.LOCAL)) {
+			port = port + serverNumber;
+		}
+
 		try {
 			serverSocket = new ServerSocket(port);
+			System.out.println("Started Server " + serverNumber + " => " + port);
+
 		} catch (IOException e) {
-			System.out.println("Death on port " + port + " Try some other port");
+			System.out
+					.println("Death on port " + port + " Try some other port");
 			System.exit(0);
 		}
 
@@ -141,7 +177,7 @@ public class Server implements Runnable {
 			Socket newCon = serverSocket.accept();
 			System.out.println("New connection Startin ...");
 			Runnable runnable = new Server(newCon);
-			Thread thread = new Thread(runnable);			
+			Thread thread = new Thread(runnable);
 			thread.start(); // start new thread to accept each connection
 		}
 	}
@@ -150,7 +186,7 @@ public class Server implements Runnable {
 	 * starts a thread which does the server stuff - sort the input requested
 	 * from client - kill itself if client says so.
 	 */
-	public void run() {
+	public synchronized void run() {
 		try {
 			BufferedReader inFromClient = new BufferedReader(
 					new InputStreamReader(connection.getInputStream()));
@@ -170,7 +206,7 @@ public class Server implements Runnable {
 
 					} else if(receivedResult[0].equals(Constants.FILES_READ)){
 						System.out.println("STAGE 2");
-						wait_for_map_files(receivedResult);
+						wait_for_files_read(receivedResult);
 						
 					}else if (receivedResult[0].equals(Constants.MAP)) {
 						System.out.println("STAGE 3 Map phase");
@@ -188,10 +224,8 @@ public class Server implements Runnable {
 						if(receivingMapFiles){
 							
 							// add received filename to list
-							
-							// TODO: new File to function
-							// readInputStringsFromLocalInputBucket(...)
-							fileNameList.add(new File(receivedResult[0]));
+							System.out.println("file received " + receivedResult[0]);
+							mapperhandlerInstance.addToListOfMapperFiles(receivedResult[0]);
 						}
 					}
 					lock.notifyAll();
@@ -221,6 +255,7 @@ public class Server implements Runnable {
 		try {
 			if (receivedResult[1].contains(Constants.START)) {
 				System.out.println("STAGE 1 start");
+				mapperhandlerInstance = new MapperHandler(job);
 				receivingMapFiles = true;
 			}
 
@@ -243,18 +278,19 @@ public class Server implements Runnable {
 
 	}
 
-	private void wait_for_map_files(String[] receivedResult) {
+	private void wait_for_files_read(String[] receivedResult) {
 		try {
 			if (serverNumber == 0) {
 				int whoRepliedNumber = Integer.parseInt(receivedResult[1]);
 				System.out.println("Server completed " + whoRepliedNumber + 
 						" " + Constants.FILES_READ);
 				
-				replied[whoRepliedNumber] = true;
 				serversReplied++;
+				System.out.println("replied# " + serversReplied);
 				
 				if (serversReplied == totalServers) {
 					// send a MAP instruction to start
+					System.out.println("Sending MAP to all servers, servers replied " + serversReplied);
 					for (int i = 0; i < totalServers; i++)
 						outDist.get(i).writeBytes(
 								Constants.MAP + "#" + i + "\n");
@@ -278,18 +314,16 @@ public class Server implements Runnable {
 		
 		try {
 			// later split and start multiple mappers with threads
-			MapperHandler mh = new MapperHandler(fileNameList, job);
-			mh.run();
-			mh.wait();
+			mapperhandlerInstance.runMapperHandler();
 
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
+			e.printStackTrace();
 			// send to server - 0 only
+			System.out.println("Sending " + Constants.MAPFAILURE + " to Master");
 			outDist.get(0).writeBytes(
 						Constants.MAPFAILURE + "#" + serverNumber + "\n");		
-			e.printStackTrace();
 		}
 		System.out.println("Mapper Ends");
 	}
-
 
 }

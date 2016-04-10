@@ -77,19 +77,18 @@ public class WordCount {
 	        sum += val.get();
 	      }
 	      result.set(sum);
+	      System.out.println(" " + result + " ," + sum);
 //	      context.write(key, result);
 	    }
 
 		@Override
 		public void setup(Context context) {
-			// TODO Auto-generated method stub
-			
+			System.out.println("reducer setup");
 		}
 
 		@Override
 		public void cleanup(Context context) {
-			// TODO Auto-generated method stub
-			
+			System.out.println("reducer cleanup");
 		}
 	  }
 

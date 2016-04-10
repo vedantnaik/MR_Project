@@ -1,15 +1,15 @@
 package coolmapreduce;
 
+import fs.FileSys;
 import io.Text;
 
-import java.io.File;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 
 import utils.Constants;
-import fs.FileSys;
 
-public class MapperHandler implements Runnable {
+public class MapperHandler {
 
 	/**
 	 * TODO: MapperHandler Requirement
@@ -27,7 +27,7 @@ public class MapperHandler implements Runnable {
 	
 	
 	// List of Mapper Files
-	List<File> listOfMapperFiles;
+	List<String> listOfMapperFiles;
 	
 	// Current Job variable
 	Job currentJob;
@@ -60,13 +60,22 @@ public class MapperHandler implements Runnable {
 
 	// Assumes each MapperHandler has a list of files to work
 	// on
-	public MapperHandler(List<File> _files, Job _job) {
+	public MapperHandler(List<String> _files, Job _job) {
 		listOfMapperFiles = _files;
 		currentJob = _job;
 	}
+	
+	public MapperHandler() {
+		listOfMapperFiles = new ArrayList<>();
+		currentJob = null;
+	}
+	
+	public MapperHandler(Job _currentJob){
+		listOfMapperFiles = new ArrayList<>();
+		currentJob = _currentJob;
+	}
 
-	@Override
-	public void run() {
+	public void runMapperHandler() throws Exception {
 
 		System.out.println("\tStarting Mapper for "
 				+ currentJob.getMapperClass().toString());
@@ -93,7 +102,7 @@ public class MapperHandler implements Runnable {
 
 	}
 
-	public void mapperHandlerRun(File file) {
+	public void mapperHandlerRun(String file) throws Exception {
 		System.out.println("Invoking map function");
 		Method map;
 		try {
@@ -103,7 +112,7 @@ public class MapperHandler implements Runnable {
 			for (String line : FileSys
 					.readInputStringsFromLocalInputBucket(
 							Job.getConf().get(Constants.INPUT_BUCKET_NAME),
-							file.getPath())) {
+							file)) {
 
 				// System.out.println("Reading " + line);
 
@@ -116,13 +125,14 @@ public class MapperHandler implements Runnable {
 		} catch (Exception e) {
 			System.out.println("Exception in running map function");
 			e.printStackTrace();
-			System.exit(0);
+			throw e;
 
 		}
 
 	}
 
-	public void mapperHandlerInit() {
+	public void mapperHandlerInit() throws Exception {
+		System.out.println("Mapper");
 		try {
 			classVariableName = currentJob.getMapperClass().getName();
 			classVariable = Class
@@ -147,11 +157,11 @@ public class MapperHandler implements Runnable {
 			System.out.println("Error finding class in JVM "
 					+ classVariableName);
 			e1.printStackTrace();
-			System.exit(0);
+			throw e1;
 		}
 	}
 
-	public void mapperHandlerSetup() {
+	public void mapperHandlerSetup() throws Exception {
 		// setup phase
 		try {
 
@@ -167,12 +177,12 @@ public class MapperHandler implements Runnable {
 		} catch (Exception e) {
 			System.out.println("exception in init of setup");
 			e.printStackTrace();
-			System.exit(0);
+			throw e;
 		}
 
 	}
 
-	public void mapperHandlerCleanup() {
+	public void mapperHandlerCleanup() throws Exception {
 		try {
 			System.out.println("\tCalling cleanup::Mapper "
 					+ currentJob.getMapperClass().toString());
@@ -188,11 +198,32 @@ public class MapperHandler implements Runnable {
 
 			System.out.println("exception in init of cleaup");
 			e.printStackTrace();
-			System.exit(0);
+			throw e;
 		}
 	}
 
 	public String returnPhaseStatus() {
 		return phase;
 	}
+
+	public List<String> getListOfMapperFiles() {
+		return listOfMapperFiles;
+	}
+
+	public void setListOfMapperFiles(List<String> listOfMapperFiles) {
+		this.listOfMapperFiles = listOfMapperFiles;
+	}
+
+	public Job getCurrentJob() {
+		return currentJob;
+	}
+
+	public void setCurrentJob(Job currentJob) {
+		this.currentJob = currentJob;
+	}
+	
+	public boolean addToListOfMapperFiles(String _file){
+		return listOfMapperFiles.add(_file);
+	}
+	
 }

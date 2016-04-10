@@ -5,13 +5,15 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
-
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import coolmapreduce.Configuration;
+
 import utils.Constants;
+import coolmapreduce.Configuration;
 
 
 /**
@@ -28,10 +30,10 @@ public class Client {
 	private static Map<Integer, Socket> sendingSocket = null;
 	private static Map<Integer, BufferedReader> inFromServer = null;
 	private static int totalServers;
-	private String currentServer = null;
+	private String masterServer = null;
 	private static Configuration config;
 	private static Map<Integer, String> servers;
-	
+	private static String localServers = "NO";
 
 	public Client() {
 		try {
@@ -41,27 +43,53 @@ public class Client {
 			sendingSocket = new HashMap<>(2 * totalServers);
 			inFromServer = new HashMap<>(2 * totalServers);
 			System.out.println("servers are " + servers);
-			currentServer = null;
-			for (int i = 0; i < totalServers; i++) {
-				currentServer = servers.get(i);
-				sendingSocket.put(i, new Socket(servers.get(i), port));
-				Socket socketTmp = sendingSocket.get(i);
-				socketTmp.setSoTimeout(0);
-				sendingSocket.put(i, socketTmp);
-				out.put(i, new DataOutputStream(sendingSocket
-						.get(i).getOutputStream()));
-				inFromServer.put(i ,new BufferedReader(new InputStreamReader(
-				sendingSocket.get(i).getInputStream())));
-
-			}
+			masterServer = null;
+			
+			if(localServers != null && localServers.equals(Constants.LOCAL))
+				initLocalServerSockets();			
+			else
+				initServerSockets();
+			
+			
 		} catch (IOException e) {
-			System.out.println("Unable to connect to all servers! " + currentServer);
+			System.out.println("Unable to connect to all servers! " + masterServer);
 			
 			e.printStackTrace();
 			System.exit(0);
 		}
 	}
 
+	public void initLocalServerSockets() throws UnknownHostException, IOException{
+		
+		for (int i = 0; i < totalServers; i++) {
+			masterServer = servers.get(i);
+			sendingSocket.put(i, new Socket("localhost", (port + i)));
+			Socket socketTmp = sendingSocket.get(i);
+			socketTmp.setSoTimeout(0);
+			sendingSocket.put(i, socketTmp);
+			out.put(i, new DataOutputStream(sendingSocket
+					.get(i).getOutputStream()));
+			inFromServer.put(i ,new BufferedReader(new InputStreamReader(
+			sendingSocket.get(i).getInputStream())));
+
+		}
+	}
+	
+public void initServerSockets() throws UnknownHostException, IOException{
+		
+		for (int i = 0; i < totalServers; i++) {
+			masterServer = servers.get(i);
+			sendingSocket.put(i, new Socket(servers.get(i), port));
+			Socket socketTmp = sendingSocket.get(i);
+			socketTmp.setSoTimeout(0);
+			sendingSocket.put(i, socketTmp);
+			out.put(i, new DataOutputStream(sendingSocket
+					.get(i).getOutputStream()));
+			inFromServer.put(i ,new BufferedReader(new InputStreamReader(
+			sendingSocket.get(i).getInputStream())));
+
+		}
+	}
 
 	public void callSorter(Configuration config, String inputBucketName, String outputBucketName, 
 			String inputFolder, String outputFolder) throws IOException {
@@ -69,8 +97,8 @@ public class Client {
 		
 //		FileSystem myS3FS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
 		
-		// TODO: Un-null me 
-		HashMap<Integer, ArrayList<String>> partsMap = null;//myS3FS.getS3Parts(totalServers); 
+		// TODO: remove MapperTester 
+		Map<Integer, List<String>> partsMap = mimicMyParts();
 
 		try {
 			
@@ -81,6 +109,7 @@ public class Client {
 				System.out.println("Map Parts to " + servers.get(i) + " => " + partsMap.get(i));
 				for(String fileNameIter : partsMap.get(i)){
 					out.get(i).writeBytes(fileNameIter+"\n");
+					Thread.sleep(1000);
 				}
 				
 				out.get(i).writeBytes(Constants.MAPFILES+ "#" + Constants.END+ "\n");
@@ -142,18 +171,39 @@ public class Client {
 	 */
 	private void killer() {
 		try {
-			for (int i = 0; i < totalServers; i++) {
-				Socket sendingSocket = new Socket(servers.get(i), port);
-				DataOutputStream out = new DataOutputStream(
-						sendingSocket.getOutputStream());
-				out.writeBytes("kill#" + "\n");
-				out.close();
-				sendingSocket.close();
+			
+			if(localServers != null && localServers.equals(Constants.LOCAL)){
+				killerLocal();
+			}else{
+				killerNonLocal();
 			}
+
 		} catch (Exception e) {
 			System.out.println("Cannot connect to the Server");
 		}
 
+	}
+	
+	private void killerLocal() throws UnknownHostException, IOException{
+		for (int i = 0; i < totalServers; i++) {				
+			Socket sendingSocket = new Socket("localhost", (port + i));
+			DataOutputStream out = new DataOutputStream(
+					sendingSocket.getOutputStream());
+			out.writeBytes("kill#" + "\n");
+			out.close();
+			sendingSocket.close();
+		}
+	}
+	
+	private void killerNonLocal() throws UnknownHostException, IOException{
+		for (int i = 0; i < totalServers; i++) {				
+			Socket sendingSocket = new Socket(servers.get(i), port);
+			DataOutputStream out = new DataOutputStream(
+					sendingSocket.getOutputStream());
+			out.writeBytes("kill#" + "\n");
+			out.close();
+			sendingSocket.close();
+		}
 	}
 
 	/**
@@ -163,10 +213,12 @@ public class Client {
 	 * @throws Exception
 	 */
 	public static void main(String args[]) throws Exception {
-		if (args.length != 4) {
-			System.out
-					.println("Include Server IP Address. Currently only localhost!");
-			System.out.println("Usage Client <inputBucketname> <outputBucketName>");
+		if (args.length < 4) {			
+			System.out.println("Usage Client <inputBucketname> <outputBucketName>"
+					+ "<inputFolder> <outputFolder> <LOCAL/nothing>");
+			System.out.println("Client some some some some LOCAL");
+			System.out.println("or");
+			System.out.println("Client some some some some");
 			System.exit(0);
 		}
 
@@ -174,12 +226,14 @@ public class Client {
 		String outputBucketName = args[1];
 		String inputFolder = args[2];
 		String outputFolder = args[3];
+		if(args.length > 4)
+			localServers = args[4];
 		
 		System.out.println("Input bucket: " + inputBucketName);
 		System.out.println("Output bucket: " + outputBucketName);
 		System.out.println("Input folder: " + inputFolder);
 		System.out.println("Output folder: " + outputFolder);
-		
+		System.out.println("Running Local ? " + localServers);
 		System.out.println("Reading s3 bucket");
 //		MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
 		config = new Configuration();
@@ -188,6 +242,26 @@ public class Client {
 		System.out.println("Connected to all Servers!");
 		System.out.println("Informing servers to begin!");
 		client.callSorter(config, inputBucketName, outputBucketName, inputFolder, outputFolder);
-
+		Thread.sleep(1000000000);
+	}
+	
+	public static String PATH = "C://Users//Dixit_Patel//Google Drive//Working on a dream//StartStudying//sem4//MapReduce//homeworks//hw8-Distributed Sorting//MR_Project//CoolHadoop//resources";
+	
+	public static List<String> getStupidFiles(){
+		List<String> files = new ArrayList<>();
+		files.add("alice.txt.gz");
+		
+		for(int i = 0 ; i< 3; i ++)
+			files.add("alice.txt.gz");
+		
+		return files;
+	}
+	
+	public static Map<Integer, List<String>> mimicMyParts(){
+		Map<Integer, List<String>> parts = new HashMap<>();
+		for(int i = 0 ; i < 3 ; i++)
+			parts.put(i, getStupidFiles());
+		
+		return parts;
 	}
 }

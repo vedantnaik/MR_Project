@@ -12,6 +12,9 @@ public class Job {
 	Class mapOutputValueClass;
 	
 	
+	Class<?> outputKeyClass;
+	Class<?> outputValueClass;
+	
 	//singleton class which returns job object itself 
 	//This will have getInstance which takes config object
 	private Job(){}
@@ -92,5 +95,21 @@ public class Job {
 		this.mapOutputValueClass = mapOutputValueClass;
 	}
 
+	public void setOutputKeyClass(Class<?> _outputKeyClass){
+		outputKeyClass = _outputKeyClass;
+	}
+	
+	public void setOutputValueClass(Class<?> _outputValueClass){
+		outputValueClass = _outputValueClass;
+	}
+	
+	public Class<?> getOutputKeyClass(){
+		return outputKeyClass;
+	}
+	
+	public Class<?> getOutputValueClass(){
+		return outputValueClass;
+	}
+	
 	
 }
