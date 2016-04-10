@@ -3,6 +3,8 @@ package fs;
 import fs.iter.FileReaderIterator;
 import io.Text;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -146,8 +148,20 @@ public class FileSys {
 	 * @throws IOException 
 	 * @throws SocketException 
 	 * */
-	public static void moveMapperTempFilesToReducers(int localServerNumber, String mapKey, int foreignServerNumber, Job currentJob) throws SocketException, IOException, JSchException, SftpException{
+	public static void moveMapperTempFilesToRemoteReducers(int localServerNumber, String mapKey, int foreignServerNumber, Job currentJob) throws SocketException, IOException, JSchException, SftpException{
 		
+		
+		// TODO: TEST CREATING FOLDERS ON REMOTE SERVERS
+		
+		// check if destination folder exists
+		String destFolderStr = Constants.ABSOLUTE_REDUCER_INPUT_FOLDER
+										.replace("<JOBNAME>", currentJob.getJobName())
+										.replace("<KEY>", mapKey);
+		
+		makeForeignFolderIfNotExist(destFolderStr, foreignServerNumber, currentJob);
+		
+		
+		// copy file
 		String srcFilePath = Constants.RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE
 										.replace("<JOBNAME>", currentJob.getJobName())
 										.replace("<KEY>", mapKey)
@@ -271,25 +285,7 @@ public class FileSys {
 		FileReaderIterator iter = new FileReaderIterator(new File(fileToRead));
 
 		return iter;
-		
-//		try {
-//			FileInputStream fileStream = new FileInputStream(fileToRead);
-//			ObjectInputStream ois = getOIS(fileStream);
-//
-//			
-//			System.out.println(ois.readObject().toString());
-//			System.out.println(ois.readObject().toString());
-//		
-//			ois.close();
-//			fileStream.close();
-//		} catch (IOException e) {
-//			System.err.println("Unable to read temp output from Mapper. File: " + fileToRead);
-//			e.printStackTrace();
-//		} catch (ClassNotFoundException e) {
-//			System.err.println("Unable to deserialize the object from file : " + fileToRead);
-//			e.printStackTrace();
-//		}
-//		
+
 	}	
 	
 	
@@ -333,6 +329,49 @@ public class FileSys {
 		finalOOS.close();
 	}
 	
+	
+	/**
+	 * Locally move mapper output values file to reducer input folder
+ 	 * mapKey				:		key for which files are to be moved from this EC2 instance
+	 * localServerNumber	:		server number within which the values file needs to be moved
+	 * currentJob			: 		current Job object
+	 * 
+	 * */
+	
+	public static void moveMapperTempFilesToLocalReducer(String mapKey, int localServerNumber, Job currentJob){
+	
+		String jobName = currentJob.getJobName();
+		
+		// make dir if does not exist
+		String destFolderStr = Constants.RELATIVE_REDUCER_INPUT_FOLDER
+								.replace("<JOBNAME>", jobName)
+								.replace("<KEY>", mapKey);
+		
+		FileSys.makeLocalFolderIfNotExist(destFolderStr);
+		
+		// move between dirs
+		String srcFileStr = Constants.RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE
+										.replace("<JOBNAME>", jobName)
+										.replace("<KEY>", mapKey)
+										.replace("<SERVERNUMBER>", localServerNumber+"");
+		
+		String destFileStr = Constants.RELATIVE_REDUCER_INPUT_FILE
+										.replace("<JOBNAME>", jobName)
+										.replace("<KEY>", mapKey)
+										.replace("<SERVERNUMBER>", localServerNumber+"");
+		
+		java.nio.file.Path src = java.nio.file.Paths.get(srcFileStr);
+		java.nio.file.Path dest = java.nio.file.Paths.get(destFileStr);
+		
+		
+		try {
+			java.nio.file.Files.move(src, dest, REPLACE_EXISTING);
+		} catch (IOException e) {
+			System.err.println("UNABLE TO SHUFFLE FILE LOCALLY FOR KEY " + mapKey + " in ServerNumber " + localServerNumber);
+			e.printStackTrace();
+		}
+		
+	}
 	
 	
 	
@@ -389,6 +428,50 @@ public class FileSys {
     }
 	
 	
+	/**
+	 * Given 
+	 * - a destination folder path in string on another EC2 instance
+	 * - server number of another EC2 instance
+	 * - current MR job object
+	 * 
+	 * Effect
+	 * - Should create the folder if it does not already exist
+	 * 
+	 * USAGE:
+	 * to create necessary folder to which we scp files
+	 * 
+	 * */
+	public static void makeForeignFolderIfNotExist(String destFolderStr, int foreignServerNumber, Job currentJob) throws JSchException, SftpException{
+		JSch jsch = new JSch();
+		jsch.addIdentity(Constants.PEM_FILE_PATH);
+		
+		Session session = null;
+		session = jsch.getSession(
+				Constants.EC2_USERNAME, 
+				currentJob.getConf().getServerIPaddrMap().get(new Integer(foreignServerNumber)), 
+				Constants.SSH_PORT);
+		
+		session.setPassword("");
+		session.setConfig("StrictHostKeyChecking", "no");
+	    session.connect();
+		
+	    ChannelSftp channel = null;
+		channel = (ChannelSftp)session.openChannel("sftp");
+		channel.connect();
+		
+		if(null == channel.stat(destFolderStr)){
+			channel.mkdir(destFolderStr);
+		}
+		
+		channel.disconnect();
+		session.disconnect();
+	}
 	
+	public static void makeLocalFolderIfNotExist(String relativeDirPath){
+		File destFolder = new File(relativeDirPath);
+		if(!destFolder.exists()){
+			destFolder.mkdirs();
+		}
+	}
 }
 
