@@ -53,10 +53,12 @@ public class MapperHandler {
 	Class<?> keyOutClass = Text.class;
 	Class<?> valueOutClass = Text.class;
 	Class<?> contextClass = Context.class;
-	
+
+	// TODO: set this value
+	int localServerNumber;
 
 	// get context from job for now class variable
-	Context contextVariable = new Context();
+	Context contextVariable = new Context(currentJob, Constants.CTX_MAP_PHASE, localServerNumber);
 
 	// Assumes each MapperHandler has a list of files to work
 	// on

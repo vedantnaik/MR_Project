@@ -32,7 +32,7 @@ public class Constants {
 	
 	public static final String RELATIVE_COMBINED_REDUCER_INPUT_FILE = "./input/<JOBNAME>/reducer/<KEY>/values.txt";
 	
-	
+	public static final String RELATIVE_REDUCER_OUTPUT_FILE = "./output/<JOBNAME>/reducer/part-XXXXX";
 	
 	// Network communication
 	public static final String PEM_FILE_PATH = "./configFiles/MyKeyPair.pem";
@@ -65,7 +65,10 @@ public class Constants {
 
 	public static final String FILES_READ = "FILES_READ";
 
-
+	// MAP REDUCE phase identifier for Context.write()
+	
+	public static final String CTX_MAP_PHASE = "CTX_MAP_PHASE";
+	public static final String CTX_RED_PHASE = "CTX_RED_PHASE";
 	
 	/**
 	 * Folders to make

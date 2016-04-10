@@ -17,6 +17,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.SocketException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -28,7 +30,12 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.GroupGrantee;
+import com.amazonaws.services.s3.model.Permission;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -227,7 +234,7 @@ public class FileSys {
 	 * Write local file
 	 * USAGE: recording output form Mapper : context.write 
 	 *  
-	 * ./output/<JOBNAME>/mapper/<KEY>/values.txt
+	 * ./output/JOBNAME/mapper/KEY/valuesSERVERNUMBER.txt
 	 * */
 	public static void writeMapperValueToKeyFolder(Text key, Object value, String jobName, int localServerNumber){
 		
@@ -373,7 +380,86 @@ public class FileSys {
 		
 	}
 	
+
 	
+	/**
+	 * On every EC2 instance, when in reducer phase, the context.write() writes a pair of
+	 * Key Value pairs to  RELATIVE_REDUCER_OUTPUT_FILE = "./output/<JOBNAME>/reducer/part-XXXXX" file
+	 * 
+	 * USAGE: Context.write() when in CTX_RED_PHASE
+	 * */
+	public static void writeReducerOutputKeyValue(Text key, Text value, String currentJobName){
+		
+		String fileToWriteInStr = Constants.RELATIVE_REDUCER_OUTPUT_FILE
+										.replace("<JOBNAME>", currentJobName);
+		
+		String tabSeparatedLineToWrite = key.toString() + "\t" + value.toString();
+		
+		// write the value
+		try {
+			java.nio.file.Files.write(
+					java.nio.file.Paths.get(fileToWriteInStr), 
+					tabSeparatedLineToWrite.getBytes(), 
+					StandardOpenOption.APPEND);
+		} catch (IOException e) {
+			System.err.println("UNABLE TO WRITE TO REDUCER OUTPUT FILE " + fileToWriteInStr);
+			e.printStackTrace();
+		}
+	}
+	
+	
+	/**
+	 * This method moves the complete final output from this reducer, to the output S3 bucket
+	 * 
+	 * USAGE: Should be called by ReducerHandler at the end of all reduce() and cleanup() calls on that server
+	 * 
+	 * Actions:
+	 * 1. Pick file for given job name
+	 * 2. move this file to S3 output bucket
+	 *  Rename the file to be moved 
+	 * 	Such that the final digits identify the server from which this output was generated
+	 * 	e.g. from "part-XXXXX" to "part-00001" for server 1
+	 * 3. Delete part-XXXX file from the local disk
+	 * 
+	 * @param
+	 * outputS3BucketName
+	 * outputS3FolderName
+	 * currentJobName
+	 * localServerNumber
+	 * */
+	public static void moveFinalReducerOutputToS3Bucket(String outputS3BucketName, String outputS3FolderName, String currentJobName, int localServerNumber){
+
+		String localFileToMoveStr = Constants.RELATIVE_REDUCER_OUTPUT_FILE
+									.replace("<JOBNAME>", currentJobName);
+		
+		// Rename
+		String serverNum = localServerNumber+"";
+		String fileNameOnS3Bucket = outputS3FolderName + "/part-" + ("00000" + serverNum).substring(serverNum.length());
+		
+		// Move to S3 bucket
+		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+		AmazonS3 s3client = new AmazonS3Client(credentials);
+		AccessControlList acl = new AccessControlList();
+		acl.grantPermission(GroupGrantee.AllUsers, Permission.Read);
+		
+		File localFileToMove = new File(localFileToMoveStr);
+		System.out.println("Moving reducer output part file from server : " + localServerNumber);
+
+		PutObjectResult result = s3client
+				.putObject(new PutObjectRequest(outputS3BucketName, 
+												fileNameOnS3Bucket, 
+												localFileToMove).withAccessControlList(acl));
+		System.out.println("Result of move from Server-" + localServerNumber 
+				+ " to output S3:\n"
+				+ result);
+		
+		// delete local copy
+		localFileToMove.delete();
+	}
+	
+	///////////////////////////////
+	// HELPERS
+	///////////////////////////////
 	
 	/**
 	 * Class used to append a serializable object to file
