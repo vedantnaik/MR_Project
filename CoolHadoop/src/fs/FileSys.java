@@ -229,7 +229,7 @@ public class FileSys {
 	 *  
 	 * ./output/<JOBNAME>/mapper/<KEY>/values.txt
 	 * */
-	public static void writeMapperValueToKeyFolder(Text key, Text value, String jobName, int localServerNumber){
+	public static void writeMapperValueToKeyFolder(Text key, Object value, String jobName, int localServerNumber){
 		
 		String fileNameToWriteIn = Constants.RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE
 									.replace("<JOBNAME>", jobName)
