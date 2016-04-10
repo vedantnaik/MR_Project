@@ -15,6 +15,9 @@ public class Constants {
 	
 	// --	Mapper
 	public static final String UNIX_FILE_SEPARATOR = "/";
+	
+	public static final String RELATIVE_MAPPER_CONTEXT_OUTPUT_FOLDER = "./output/<JOBNAME>/mapper/";
+	
 	public static final String RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE = "./output/<JOBNAME>/mapper/<KEY>/values<SERVERNUMBER>.txt";
 	public static final String ABSOLUTE_MAPPER_CONTEXT_OUTPUT_FILE = "~/Project/output/<JOBNAME>/mapper/<KEY>/values<SERVERNUMBER>.txt";
 	
@@ -22,6 +25,7 @@ public class Constants {
 	
 	// --	Reducer
 	public static final String RELATIVE_REDUCER_INPUT_FOLDER = "./input/<JOBNAME>/reducer/<KEY>/";
+	public static final String ABSOLUTE_REDUCER_INPUT_FOLDER = "~/Project/input/<JOBNAME>/reducer/<KEY>/";
 	
 	public static final String RELATIVE_REDUCER_INPUT_FILE = "./input/<JOBNAME>/reducer/<KEY>/values<SERVERNUMBER>.txt";
 	public static final String ABSOLUTE_REDUCER_INPUT_FILE = "~/Project/input/<JOBNAME>/reducer/<KEY>/values<SERVERNUMBER>.txt";
