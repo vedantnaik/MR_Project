@@ -7,14 +7,13 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 import utils.Constants;
 import coolmapreduce.Configuration;
-
 
 /**
  * A sample client which connects to the server and can issue a sorting command
@@ -25,7 +24,7 @@ import coolmapreduce.Configuration;
 public class Client {
 
 	static int port = 1210;
-	
+
 	private static Map<Integer, DataOutputStream> out = null;
 	private static Map<Integer, Socket> sendingSocket = null;
 	private static Map<Integer, BufferedReader> inFromServer = null;
@@ -44,118 +43,99 @@ public class Client {
 			inFromServer = new HashMap<>(2 * totalServers);
 			System.out.println("servers are " + servers);
 			masterServer = null;
-			
-			if(localServersFlag)
-				initLocalServerSockets();			
-			else
-				initServerSockets();
-			
-			
+
+			initServerSockets(localServersFlag);
+
 		} catch (IOException e) {
-			System.out.println("Unable to connect to all servers! " + masterServer);
-			
+			System.out.println("Unable to connect to all servers! "
+					+ masterServer);
+
 			e.printStackTrace();
 			System.exit(0);
 		}
 	}
 
-	public void initLocalServerSockets() throws UnknownHostException, IOException{
-		
-		for (int i = 0; i < totalServers; i++) {
-			masterServer = servers.get(i);
-			sendingSocket.put(i, new Socket("localhost", (port + i)));
-			Socket socketTmp = sendingSocket.get(i);
-			socketTmp.setSoTimeout(0);
-			sendingSocket.put(i, socketTmp);
-			out.put(i, new DataOutputStream(sendingSocket
-					.get(i).getOutputStream()));
-			inFromServer.put(i ,new BufferedReader(new InputStreamReader(
-			sendingSocket.get(i).getInputStream())));
+	public void initServerSockets(boolean localServersFlag)
+			throws UnknownHostException, IOException {
 
-		}
-	}
-	
-public void initServerSockets() throws UnknownHostException, IOException{
-		
 		for (int i = 0; i < totalServers; i++) {
+
 			masterServer = servers.get(i);
-			sendingSocket.put(i, new Socket(servers.get(i), port));
+			if (localServersFlag) {
+				sendingSocket.put(i, new Socket("localhost", (port + i)));
+			} else {
+				sendingSocket.put(i, new Socket(servers.get(i), port));
+			}
+
 			Socket socketTmp = sendingSocket.get(i);
 			socketTmp.setSoTimeout(0);
 			sendingSocket.put(i, socketTmp);
-			out.put(i, new DataOutputStream(sendingSocket
-					.get(i).getOutputStream()));
-			inFromServer.put(i ,new BufferedReader(new InputStreamReader(
-			sendingSocket.get(i).getInputStream())));
+			out.put(i, new DataOutputStream(sendingSocket.get(i)
+					.getOutputStream()));
+			inFromServer.put(i, new BufferedReader(new InputStreamReader(
+					sendingSocket.get(i).getInputStream())));
 
 		}
 	}
 
-	public void callSorter(Configuration config, String inputBucketName, String outputBucketName, 
-			String inputFolder, String outputFolder) throws IOException {
-		
-		
-//		FileSystem myS3FS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
-		
-		// TODO: remove MapperTester 
+	public void startJob(Configuration config, String inputBucketName,
+			String outputBucketName, String inputFolder, String outputFolder)
+			throws IOException {
+
+		// FileSystem myS3FS = new FileSystem(inputBucketName, outputBucketName,
+		// inputFolder, outputFolder);
+
+		// TODO: remove MapperTester
 		Map<Integer, List<String>> partsMap = mimicMyParts();
 
 		try {
-			
-			 // 1. Sending files to server
+
+			// 1. Sending files to server
 			for (int i = 0; i < totalServers; i++) {
-				
-				out.get(i).writeBytes(Constants.MAPFILES+ "#" + Constants.START+ "\n");
-				System.out.println("Map Parts to " + servers.get(i) + " => " + partsMap.get(i));
-				for(String fileNameIter : partsMap.get(i)){
-					out.get(i).writeBytes(fileNameIter+"\n");
+
+				out.get(i).writeBytes(
+						Constants.MAPFILES + "#" + Constants.START + "\n");
+				System.out.println("Map Parts to " + servers.get(i) + " => "
+						+ partsMap.get(i));
+				for (String fileNameIter : partsMap.get(i)) {
+					out.get(i).writeBytes(fileNameIter + "\n");
 					Thread.sleep(1000);
 				}
-				
-				out.get(i).writeBytes(Constants.MAPFILES+ "#" + Constants.END+ "\n");
+
+				out.get(i).writeBytes(
+						Constants.MAPFILES + "#" + Constants.END + "\n");
 				System.out.println("Files sent to Server ..." + i);
 			}
-			
-			
-			// 3. Then client issues a command to all Servers to distribute their 
-			//  	  pivots.
-			System.out.println("sending command to start Map");
-			// distribute pivots
-			for (int i = 0; i < totalServers; i++) {
-				out.get(i).writeBytes(Constants.MAP+ "#" + Constants.START + "\n");
-			}
-			System.out.println("distributed!");
 
+			// 2. wait for FILES_READ#Number from all servers
+			waitForReply(Constants.FILES_READ);
+
+			// 3. Send MAP#START to all servers
+			sendAConstant(Constants.MAP, Constants.START);
+
+			// 4. wait for MAPFINISH#Number from all servers
+			// or replies MAPFAILURE#Number
+			waitForReply(Constants.MAP_FINISH);
+			// TODO: What todo if FAILURE? restructure fun
+			// to accomodate failure and restart on some node later
+
+			// 5. Send SHUFFLEANDSORT to all servers
+			sendAConstant(Constants.SHUFFLEANDSORT, Constants.START);
+
+			// 6. Wait for SHUFFLEANDSORT to finish
+			waitForReply(Constants.SHUFFLEFINISH);
+
+			// 7. Send REDUCE to all servers
+			sendAConstant(Constants.REDUCE, Constants.START);
 			
-			// WAITING LOGIC, after reduce!!
-			
-			// 2. It then waits for the Server to reply back when their local sorting
-		    //   is done. 
-//			int replies = 0;
-//			boolean[] replied = new boolean[totalServers];
-//			while (true) {
-//				for (int i = 0; i < replied.length && !replied[i]; i++) {
-//
-//					String result = inFromServer.get(i).readLine();
-//					String[] returnedResult = result.split("#");
-//					System.out.println(returnedResult[0] + " Results from : " + i);
-//
-//					replied[i] = true;
-//					if (replied[i]) {
-//						replies++;
-//					}
-//				}
-//				if (replies == totalServers) {
-//					System.out.println("replied by " + replies);
-//					break;
-//				}
-//
-//			}
-//			// totalServers replied
-//			System.out.println("replied array " + Arrays.toString(replied));
-			
-			
+			// 8. Wait for REDUCEFINISH to finish
+			waitForReply(Constants.REDUCEFINISH);
+
 			System.out.println("Waiting for Servers to finish");
+
+			System.out.println("Stopping Servers");
+
+			killer(localServersFlag);
 
 		} catch (Exception e) {
 			System.out.println("Cannot connect to the Server");
@@ -163,46 +143,80 @@ public void initServerSockets() throws UnknownHostException, IOException{
 		}
 	}
 
+	// sends a particular phase to start to all servers
+	private void sendAConstant(String _constant1, String _beginEnd)
+			throws IOException {
+		System.out
+				.println("sending command to " + _constant1 + " " + _beginEnd);
+		// distribute pivots
+		for (int i = 0; i < totalServers; i++) {
+			out.get(i).writeBytes(_constant1 + "#" + _beginEnd + "\n");
+		}
+		System.out.println("Sent command for " + _constant1 + " " + _beginEnd
+				+ "!");
+	}
+
+	// It then waits for the Server to reply back when their phase
+	// is done.
+	private void waitForReply(String waitForConstant) throws IOException {
+		System.out.println("wait for reply " + waitForConstant);
+		int replies = 0;
+		boolean[] replied = new boolean[totalServers];
+		while (true) {
+			for (int i = 0; i < replied.length && !replied[i]; i++) {
+
+				String result = inFromServer.get(i).readLine();
+				System.out.println("received " + result);
+
+				String[] returnedResult = result.split("#");
+
+				if (returnedResult[0].equals(waitForConstant)) {
+					System.out.println(returnedResult[0] + "" + " from : " + i);
+
+					replied[i] = true;
+					if (replied[i]) {
+						replies++;
+					}
+				}
+			}
+			if (replies == totalServers) {
+				System.out.println("replied by " + replies);
+				break;
+			}
+
+		}
+		// totalServers replied
+		System.out.println("finished waiting for reply " + waitForConstant
+				+ Arrays.toString(replied));
+	}
+
 	/**
 	 * Sends a kill command to server to terminate itself
 	 * 
-	 * @param serverIP the server ip of the server eg. 127.0.0.1
-	 * @param serverPort the server port eg. 1212
+	 * @param serverIP
+	 *            the server ip of the server eg. 127.0.0.1
+	 * @param serverPort
+	 *            the server port eg. 1212
 	 */
-	private void killer() {
+	private void killer(boolean localServersFlag) throws UnknownHostException,
+			IOException {
 		try {
-			
-			if(localServersFlag){
-				killerLocal();
-			}else{
-				killerNonLocal();
-			}
+			for (int i = 0; i < totalServers; i++) {
+				Socket sendingSocket = null;
+				if (localServersFlag) {
+					sendingSocket = new Socket("localhost", (port + i));
+				} else {
+					sendingSocket = new Socket(servers.get(i), port);
+				}
 
+				DataOutputStream out = new DataOutputStream(
+						sendingSocket.getOutputStream());
+				out.writeBytes("kill#" + "\n");
+				out.close();
+				sendingSocket.close();
+			}
 		} catch (Exception e) {
 			System.out.println("Cannot connect to the Server");
-		}
-
-	}
-	
-	private void killerLocal() throws UnknownHostException, IOException{
-		for (int i = 0; i < totalServers; i++) {				
-			Socket sendingSocket = new Socket("localhost", (port + i));
-			DataOutputStream out = new DataOutputStream(
-					sendingSocket.getOutputStream());
-			out.writeBytes("kill#" + "\n");
-			out.close();
-			sendingSocket.close();
-		}
-	}
-	
-	private void killerNonLocal() throws UnknownHostException, IOException{
-		for (int i = 0; i < totalServers; i++) {				
-			Socket sendingSocket = new Socket(servers.get(i), port);
-			DataOutputStream out = new DataOutputStream(
-					sendingSocket.getOutputStream());
-			out.writeBytes("kill#" + "\n");
-			out.close();
-			sendingSocket.close();
 		}
 	}
 
@@ -213,9 +227,10 @@ public void initServerSockets() throws UnknownHostException, IOException{
 	 * @throws Exception
 	 */
 	public static void main(String args[]) throws Exception {
-		if (args.length < 4) {			
-			System.out.println("Usage Client <inputBucketname> <outputBucketName>"
-					+ "<inputFolder> <outputFolder> <LOCAL/nothing>");
+		if (args.length < 4) {
+			System.out
+					.println("Usage Client <inputBucketname> <outputBucketName>"
+							+ "<inputFolder> <outputFolder> <LOCAL/nothing>");
 			System.out.println("Client some some some some LOCAL");
 			System.out.println("or");
 			System.out.println("Client some some some some");
@@ -226,42 +241,44 @@ public void initServerSockets() throws UnknownHostException, IOException{
 		String outputBucketName = args[1];
 		String inputFolder = args[2];
 		String outputFolder = args[3];
-		if(args.length > 4 && args[4].equals(Constants.LOCAL))
+		if (args.length > 4 && args[4].equals(Constants.LOCAL))
 			localServersFlag = true;
-		
+
 		System.out.println("Input bucket: " + inputBucketName);
 		System.out.println("Output bucket: " + outputBucketName);
 		System.out.println("Input folder: " + inputFolder);
 		System.out.println("Output folder: " + outputFolder);
 		System.out.println("Running Local ? " + localServersFlag);
 		System.out.println("Reading s3 bucket");
-//		MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
+		// MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder,
+		// outputFolder);
 		config = new Configuration();
 		System.out.println("connecting to servers");
 		Client client = new Client();
 		System.out.println("Connected to all Servers!");
 		System.out.println("Informing servers to begin!");
-		client.callSorter(config, inputBucketName, outputBucketName, inputFolder, outputFolder);
+		client.startJob(config, inputBucketName, outputBucketName, inputFolder,
+				outputFolder);
 		Thread.sleep(1000000000);
 	}
-	
+
 	public static String PATH = "C://Users//Dixit_Patel//Google Drive//Working on a dream//StartStudying//sem4//MapReduce//homeworks//hw8-Distributed Sorting//MR_Project//CoolHadoop//resources";
-	
-	public static List<String> getStupidFiles(){
+
+	public static List<String> getStupidFiles() {
 		List<String> files = new ArrayList<>();
 		files.add("alice.txt.gz");
-		
-		for(int i = 0 ; i< 3; i ++)
+
+		for (int i = 0; i < 3; i++)
 			files.add("alice.txt.gz");
-		
+
 		return files;
 	}
-	
-	public static Map<Integer, List<String>> mimicMyParts(){
+
+	public static Map<Integer, List<String>> mimicMyParts() {
 		Map<Integer, List<String>> parts = new HashMap<>();
-		for(int i = 0 ; i < 3 ; i++)
+		for (int i = 0; i < 3; i++)
 			parts.put(i, getStupidFiles());
-		
+
 		return parts;
 	}
 }

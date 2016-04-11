@@ -76,33 +76,23 @@ public class Server implements Runnable {
 	public Server(Socket newConnection) throws UnknownHostException,
 			IOException {
 		this.connection = newConnection;
-		
-		if(localServersFlag)
-			initLocalOtherSockets();
-		else
-			initOtherSockets();
+		initOtherSockets(localServersFlag);
 	}
 
-	public void initLocalOtherSockets() throws UnknownHostException,
-			IOException {
-		System.out.println("Init local Sockets");
+	public void initOtherSockets(boolean localServersFlag) throws UnknownHostException, IOException {
+		System.out.println("Init Sockets");
+		
 		// hacking localport 
 		int localport = port - serverNumber;
+			
 		for (int i = 0; i < totalServers; i++) {
 			if (outDist.get(i) == null) {
-				System.out.println("Connecting to " + i + " @ " + (localport + i));
-				sendingSocketDist.put(i, new Socket("localhost", (localport + i)));
-				outDist.put(i, new DataOutputStream(
-						sendingSocketDist.get(i).getOutputStream()));
-			}
-		}		
-	}
-
-	public void initOtherSockets() throws UnknownHostException, IOException {
-		System.out.println("Init Sockets");
-		for (int i = 0; i < totalServers; i++) {
-			if (outDist.get(i) == null) {
-				sendingSocketDist.put(i, new Socket(Configuration.getServerIPaddrMap().get(i), port));
+				if(localServersFlag){
+					System.out.println("Connecting to " + i + " @ " + (localport + i));
+					sendingSocketDist.put(i, new Socket("localhost", (localport + i)));
+				}else{
+					sendingSocketDist.put(i, new Socket(Configuration.getServerIPaddrMap().get(i), port));
+				}	
 				outDist.put(i, new DataOutputStream(
 						sendingSocketDist.get(i).getOutputStream()));
 			}
@@ -201,28 +191,25 @@ public class Server implements Runnable {
 					String[] receivedResult = splitReceived(received);
 
 					if (receivedResult[0].equals(Constants.MAPFILES)) {
-						System.out.println("STAGE 1");											
+						System.out.println("STAGE 1 " + Constants.MAPFILES);											
 						start_map_files_phase(receivedResult, out);
-
-					} else if(receivedResult[0].equals(Constants.FILES_READ)){
-						System.out.println("STAGE 2");
-						wait_for_files_read(receivedResult);
-						
-					}else if (receivedResult[0].equals(Constants.MAP)) {
-						System.out.println("STAGE 3 Map phase");
+					} 
+					else if (receivedResult[0].equals(Constants.MAP)) {
+						System.out.println("STAGE 2 " + Constants.MAP);
 						start_map_phase();
-
-					}else if(receivedResult[0].equals(Constants.MAPFAILURE)){
-						int whoFailed = Integer.parseInt(receivedResult[1]);
-						System.out.println("received failure from "+ whoFailed);
-						
-						// TODO: should I restart on same server or other server?
-					}else if (receivedResult[0].equals("kill")) {
+					}else if(receivedResult[0].equals(Constants.SHUFFLEANDSORT)){
+						System.out.println("STAGE 3 " + Constants.SHUFFLEANDSORT);
+						start_shuffle_and_sort();
+					}else if(receivedResult[0].equals(Constants.REDUCE)){
+						System.out.println("STAGE 4 " + Constants.REDUCE);
+						start_reduce_phase();
+					}
+					else if (receivedResult[0].equals(Constants.KILL)) {
+						System.out.println("STAGE N " + Constants.KILL);
 						System.out.println("KILLED!");
 						System.exit(0);
 					} else {
-						if(receivingMapFiles){
-							
+						if(receivingMapFiles){							
 							// add received filename to list
 							System.out.println("file received " + receivedResult[0]);
 							mapperhandlerInstance.addToListOfMapperFiles(receivedResult[0]);
@@ -264,11 +251,7 @@ public class Server implements Runnable {
 
 				receivingMapFiles = false;
 				outClient = out;
-				out.writeBytes(Constants.NEED_TO_STARTING_MAP + "\n");
-				System.out.println("replied " + Constants.NEED_TO_STARTING_MAP
-						+ " to client");
-
-				outDist.get(0).writeBytes(
+				outClient.writeBytes(
 						Constants.FILES_READ + "#" + serverNumber + "\n");
 			}
 		} catch (IOException e) {
@@ -278,29 +261,6 @@ public class Server implements Runnable {
 
 	}
 
-	private void wait_for_files_read(String[] receivedResult) {
-		try {
-			if (serverNumber == 0) {
-				int whoRepliedNumber = Integer.parseInt(receivedResult[1]);
-				System.out.println("Server completed " + whoRepliedNumber + 
-						" " + Constants.FILES_READ);
-				
-				serversReplied++;
-				System.out.println("replied# " + serversReplied);
-				
-				if (serversReplied == totalServers) {
-					// send a MAP instruction to start
-					System.out.println("Sending MAP to all servers, servers replied " + serversReplied);
-					for (int i = 0; i < totalServers; i++)
-						outDist.get(i).writeBytes(
-								Constants.MAP + "#" + i + "\n");
-				}
-			}
-		} catch (Exception e) {
-			System.out.println("Exception in wait_for_map_files");
-			e.printStackTrace();
-		}
-	}
 
 	/**
 	 * Calls the MapperHandler as thread
@@ -309,7 +269,7 @@ public class Server implements Runnable {
 	private void start_map_phase() throws IOException {
 		System.out.println("Stage1: read input files assigned to server...");
 
-		// 1. Calling Mapper Handler thread
+		// Calling Mapper Handler thread
 		System.out.println("Mapper Starts");
 		
 		try {
@@ -318,12 +278,31 @@ public class Server implements Runnable {
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			// send to server - 0 only
+			// send to Master only
 			System.out.println("Sending " + Constants.MAPFAILURE + " to Master");
 			outDist.get(0).writeBytes(
 						Constants.MAPFAILURE + "#" + serverNumber + "\n");		
 		}
 		System.out.println("Mapper Ends");
+		
+		// reply MAPFINISH#Number to Master
+		outClient.writeBytes(
+				Constants.MAP_FINISH + "#" + serverNumber + "\n");
+	}
+	
+
+	private void start_shuffle_and_sort() throws IOException {
+		// TODO: Call functions
+		
+		
+		outClient.writeBytes(
+				Constants.SHUFFLEFINISH + "#" + serverNumber + "\n");
+	}
+	
+	private void start_reduce_phase() throws IOException {
+		// TODO: Call reduceHandler
+		outClient.writeBytes(
+				Constants.REDUCEFINISH + "#" + serverNumber + "\n");
 	}
 
 }

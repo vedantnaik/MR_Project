@@ -92,6 +92,7 @@ public class MapperHandler {
 
 		phase = Constants.RUNNING;
 		int total = listOfMapperFiles.size();
+		System.out.println("mapper files " + total);
 		for (int i = 0; i < listOfMapperFiles.size(); i++) {
 			mapperHandlerRun(listOfMapperFiles.get(i));
 			phase = Constants.RUNNING + " " + (i * 100.0) / total;
