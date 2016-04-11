@@ -71,13 +71,13 @@ public class Server implements Runnable {
 	
 	private static Configuration config;
 	private static Job job;
-	private static String localServers = "NO"; 
+	private static boolean localServersFlag = false; 
 
 	public Server(Socket newConnection) throws UnknownHostException,
 			IOException {
 		this.connection = newConnection;
 		
-		if(localServers != null && localServers.equals(Constants.LOCAL))
+		if(localServersFlag)
 			initLocalOtherSockets();
 		else
 			initOtherSockets();
@@ -125,14 +125,14 @@ public class Server implements Runnable {
 		outputBucketName = args[2];
 		inputFolder = args[3];
 		outputFolder = args[4];
-		if(args.length > 5)
-			localServers = args[5];
+		if(args.length > 5 && args[5].equals(Constants.LOCAL))
+			localServersFlag = true;
 
 		System.out.println("Input bucket: " + inputBucketName);
 		System.out.println("Output bucket: " + outputBucketName);
 		System.out.println("Input folder: " + inputFolder);
 		System.out.println("Output folder: " + outputFolder);
-		System.out.println("Running Local? : " + localServers);
+		System.out.println("Running Local? : " + localServersFlag);
 
 		// MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder,
 		// outputFolder);
@@ -159,7 +159,7 @@ public class Server implements Runnable {
 		System.out.println("servers to connect to : "
 				+ Configuration.getServerIPaddrMap());
 
-		if (localServers != null && localServers.equals(Constants.LOCAL)) {
+		if (localServersFlag) {
 			port = port + serverNumber;
 		}
 
@@ -168,8 +168,8 @@ public class Server implements Runnable {
 			System.out.println("Started Server " + serverNumber + " => " + port);
 
 		} catch (IOException e) {
-			System.out
-					.println("Death on port " + port + " Try some other port");
+			System.out.println("Death on port " + port + 
+					" Try some other port");
 			System.exit(0);
 		}
 

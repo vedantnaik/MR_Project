@@ -33,7 +33,7 @@ public class Client {
 	private String masterServer = null;
 	private static Configuration config;
 	private static Map<Integer, String> servers;
-	private static String localServers = "NO";
+	private static boolean localServersFlag = false;
 
 	public Client() {
 		try {
@@ -45,7 +45,7 @@ public class Client {
 			System.out.println("servers are " + servers);
 			masterServer = null;
 			
-			if(localServers != null && localServers.equals(Constants.LOCAL))
+			if(localServersFlag)
 				initLocalServerSockets();			
 			else
 				initServerSockets();
@@ -172,7 +172,7 @@ public void initServerSockets() throws UnknownHostException, IOException{
 	private void killer() {
 		try {
 			
-			if(localServers != null && localServers.equals(Constants.LOCAL)){
+			if(localServersFlag){
 				killerLocal();
 			}else{
 				killerNonLocal();
@@ -226,14 +226,14 @@ public void initServerSockets() throws UnknownHostException, IOException{
 		String outputBucketName = args[1];
 		String inputFolder = args[2];
 		String outputFolder = args[3];
-		if(args.length > 4)
-			localServers = args[4];
+		if(args.length > 4 && args[4].equals(Constants.LOCAL))
+			localServersFlag = true;
 		
 		System.out.println("Input bucket: " + inputBucketName);
 		System.out.println("Output bucket: " + outputBucketName);
 		System.out.println("Input folder: " + inputFolder);
 		System.out.println("Output folder: " + outputFolder);
-		System.out.println("Running Local ? " + localServers);
+		System.out.println("Running Local ? " + localServersFlag);
 		System.out.println("Reading s3 bucket");
 //		MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder, outputFolder);
 		config = new Configuration();
