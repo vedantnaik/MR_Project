@@ -1,4 +1,5 @@
 package coolmapreduce;
+
 public class Job {
 	
 	
@@ -34,11 +35,6 @@ public class Job {
 	
 	private static Job ref;
 
-	// TODO: wait for completion <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-	// waitForCompletion(true)
-	
-	
-	
 	public String getJobName() {
 		return jobName;
 	}
@@ -111,5 +107,18 @@ public class Job {
 		return outputValueClass;
 	}
 	
+	public boolean waitForCompletion() {
+		// TODO:
+		// write "this" object to file (jobfile_jobname)
+		// Tried in test program, works
+		
+		// Call the Master(Client Program here)
+		// the client connects to all servers, ships
+		// the jobfile_jobname
+		// starts Map and co-ordinates till end of job 
+		// to return true
+	
+		return true;
+	}
 	
 }
