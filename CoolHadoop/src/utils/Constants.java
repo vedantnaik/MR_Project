@@ -60,15 +60,22 @@ public class Constants {
 
 	public static final String MAP_FINISH = "MAP_FINISH";
 	public static final String NEED_TO_STARTING_MAP = "NEED_TO_STARTING_MAP";
+	public static final String SHUFFLEANDSORT = "SHUFFLEANDSORT";
+	public static final String KILL = "KILL";
+	public static final String SHUFFLEFINISH = "SHUFFLEFINISH";	
+	public static final String REDUCEFINISH = "REDUCEFINISH";
+	
 
-	public static final String START_MAP = "START_MAP";
-
+	public static final String START_MAP = "START_MAP";	
 	public static final String FILES_READ = "FILES_READ";
 
 	// MAP REDUCE phase identifier for Context.write()
 	
 	public static final String CTX_MAP_PHASE = "CTX_MAP_PHASE";
 	public static final String CTX_RED_PHASE = "CTX_RED_PHASE";
+
+
+	
 	
 	/**
 	 * Folders to make
