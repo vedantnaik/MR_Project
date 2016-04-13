@@ -18,7 +18,7 @@ import coolmapreduce.Job;
 
 /**
  * A Master which controls the slave Servers and can issue commands It can also
- * kill the server slaves and self destruct itself!a
+ * kill the server slaves and self destruct itself!
  */
 public class Master {
 
@@ -40,13 +40,15 @@ public class Master {
 	 * number to provide different local-ports. If not, the DNS files of EC2
 	 * instances are used and started at port 1210
 	 * 
+	 * @param config
+	 * 				the configuration config object of the Job
 	 * @param _localFlag
 	 *            boolean value telling if the slave servers are local or not
 	 */
-	public Master(boolean _localFlag) {
+	public Master(Configuration config, boolean _localFlag) {
 		try {
 			localServersFlag = _localFlag;
-			servers = Configuration.getServerIPaddrMap();
+			servers = config.getServerIPaddrMap();
 			totalServers = servers.size();
 			out = new HashMap<>(2 * totalServers);
 			sendingSocket = new HashMap<>(2 * totalServers);
@@ -68,8 +70,8 @@ public class Master {
 	/**
 	 * By default sets it local Server and calls the parameterized Constructor.
 	 */
-	public Master() {
-		this(true);
+	public Master(Configuration config) {
+		this(config, true);
 	}
 
 	/**

@@ -100,7 +100,7 @@ public class Server implements Runnable {
 					System.out.println("Connecting to " + i + " @ " + (localport + i));
 					sendingSocketDist.put(i, new Socket("localhost", (localport + i)));
 				}else{
-					sendingSocketDist.put(i, new Socket(Configuration.getServerIPaddrMap().get(i), port));
+					sendingSocketDist.put(i, new Socket(config.getServerIPaddrMap().get(i), port));
 				}	
 				outDist.put(i, new DataOutputStream(
 						sendingSocketDist.get(i).getOutputStream()));
@@ -150,15 +150,15 @@ public class Server implements Runnable {
 		lock = new Object();
 //		replied = new boolean[totalServers];
 
-		totalServers = Configuration.getServerIPaddrMap().size();
+		totalServers = config.getServerIPaddrMap().size();
 		numberOfProcessors = totalServers;
 		System.out.println("totalServers "
-				+ Configuration.getServerIPaddrMap().size());
+				+ config.getServerIPaddrMap().size());
 		outDist = new HashMap<>(2 * totalServers);
 		sendingSocketDist = new HashMap<>(2 * totalServers);
 
 		System.out.println("servers to connect to : "
-				+ Configuration.getServerIPaddrMap());
+				+ config.getServerIPaddrMap());
 
 		if (localServersFlag) {
 			port = port + serverNumber;
@@ -268,9 +268,8 @@ public class Server implements Runnable {
 			System.out.println("Reading Jobname: " + receivedResult[1]);
 
 			ObjectInputStream iis = new ObjectInputStream(new FileInputStream(
-					new File(receivedResult[1])));
+					new File(receivedResult[1]+Constants.JOBEXTN)));
 			job = (Job) iis.readObject();
-			System.out.println("Job read : " + job);
 			iis.close();
 
 			outClient = out;

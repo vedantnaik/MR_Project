@@ -10,8 +10,8 @@ public class FileOutputFormat {
 	
 	
 	//FileOutputFormat.setOutputPath(job, new Path(args[1]));
-	public void setOutputPath(Job myJob, Path outputPath){
-		Job.getConf().set(Constants.CTX_OUTPUT_PATH_KEY, outputPath.toString());
+	public static void setOutputPath(Job myJob, Path outputPath){
+		myJob.getConf().set(Constants.CTX_OUTPUT_PATH_KEY, outputPath.toString());
 	}
 	
 	

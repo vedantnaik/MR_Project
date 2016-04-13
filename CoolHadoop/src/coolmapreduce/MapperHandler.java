@@ -67,16 +67,35 @@ public class MapperHandler {
 		currentJob = _job;
 	}
 	
+	/**
+	 * Init MapperHandler with an empty List of Mapper files
+	 */
 	public MapperHandler() {
 		listOfMapperFiles = new ArrayList<>();
 		currentJob = null;
 	}
 	
+	/**
+	 * Init MapperHandler with empty list of Mapper files
+	 * and currentJob as the Job object
+	 * @param _currentJob
+	 * the Job object to init the MapperHandler with
+	 */
 	public MapperHandler(Job _currentJob){
 		listOfMapperFiles = new ArrayList<>();
 		currentJob = _currentJob;
 	}
 
+	/**
+	 * Serially run the MapperHandler calling the functions
+	 * <p><ul>
+	 * <li> 1. Call mapper Handler Init - INIT of Mapper
+	 * <li> 2. Call the Setup of Mapper - the User's Mapper setup function
+	 * <li> 3. Call map function of the user, line-by-line on each file 
+	 * <li> 4. Call the mapper's cleanup function defined by User
+	 * </ul></p>
+	 * @throws Exception
+	 */
 	public void runMapperHandler() throws Exception {
 
 		System.out.println("\tStarting Mapper for "
@@ -112,12 +131,10 @@ public class MapperHandler {
 			System.out.println("invoking map ");
 			map = classVariable.getMethod("map", keyInClass, keyOutClass,
 					contextClass);
-			System.out.println("config " + Job.getConf());
-			System.out.println("file " + "bucket " + Job.getConf().get(Constants.INPUT_BUCKET_NAME)
-					+ " file " + file);
+
 			for (String line : FileSys
 					.readInputStringsFromLocalInputBucket(
-							Job.getConf().get(Constants.INPUT_BUCKET_NAME),
+							currentJob.getConf().get(Constants.INPUT_BUCKET_NAME),
 							file)) {
 
 				// System.out.println("Reading " + line);

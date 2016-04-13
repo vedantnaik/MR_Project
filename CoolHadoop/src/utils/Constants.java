@@ -67,6 +67,7 @@ public class Constants {
 	public static final String KILL = "KILL";
 	public static final String SHUFFLEFINISH = "SHUFFLEFINISH";	
 	public static final String REDUCEFINISH = "REDUCEFINISH";
+	public static final String JOBEXTN = ".jobname";
 	
 
 	public static final String START_MAP = "START_MAP";	
@@ -76,6 +77,7 @@ public class Constants {
 	
 	public static final String CTX_MAP_PHASE = "CTX_MAP_PHASE";
 	public static final String CTX_RED_PHASE = "CTX_RED_PHASE";
+
 
 
 	
