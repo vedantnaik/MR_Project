@@ -12,8 +12,8 @@ import utils.Constants;
 
 public class Configuration implements Serializable{
 	
-	private static HashMap<Integer, String> serverIPaddrMap;
-	private static HashMap<String, String> confMap = new HashMap<String, String>();
+	private HashMap<Integer, String> serverIPaddrMap;
+	private HashMap<String, String> confMap = new HashMap<String, String>();
 	
 	
 	
@@ -77,12 +77,12 @@ public class Configuration implements Serializable{
 
 	// GETTER SETTERS
 
-	public static HashMap<Integer, String> getServerIPaddrMap() {
+	public HashMap<Integer, String> getServerIPaddrMap() {
 		return serverIPaddrMap;
 	}
 
-	public static void setServerIPaddrMap(HashMap<Integer, String> serverIPaddrMap) {
-		Configuration.serverIPaddrMap = serverIPaddrMap;
+	public void setServerIPaddrMap(HashMap<Integer, String> _serverIPaddrMap) {
+		serverIPaddrMap = _serverIPaddrMap;
 	}
 	
 	@Override
