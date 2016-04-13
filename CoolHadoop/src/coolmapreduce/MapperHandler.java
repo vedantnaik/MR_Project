@@ -3,9 +3,14 @@ package coolmapreduce;
 import fs.FileSys;
 import io.Text;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
 
 import utils.Constants;
 
@@ -58,7 +63,7 @@ public class MapperHandler {
 	int localServerNumber;
 
 	// get context from job for now class variable
-	Context contextVariable = new Context(currentJob, Constants.CTX_MAP_PHASE, localServerNumber);
+	Context contextVariable = null;
 
 	// Assumes each MapperHandler has a list of files to work
 	// on
@@ -80,10 +85,13 @@ public class MapperHandler {
 	 * and currentJob as the Job object
 	 * @param _currentJob
 	 * the Job object to init the MapperHandler with
+	 * localServerNumber : server on which this mapper instance is created
 	 */
-	public MapperHandler(Job _currentJob){
+	public MapperHandler(Job _currentJob, int _localServerNumber){
 		listOfMapperFiles = new ArrayList<>();
 		currentJob = _currentJob;
+		localServerNumber = _localServerNumber;
+		contextVariable = new Context(currentJob, Constants.CTX_MAP_PHASE, localServerNumber);
 	}
 
 	/**
@@ -118,8 +126,14 @@ public class MapperHandler {
 		}
 
 		phase = Constants.CLEANUP;
+		
 		mapperHandlerCleanup();
 
+		// MKM processing after cleanup
+		writeMapperKeysMapToFile();
+
+		moveMapperKeyMapFileToMainServer();
+		
 		phase = Constants.MAP_FINISH;
 
 	}
@@ -225,6 +239,70 @@ public class MapperHandler {
 		}
 	}
 
+	// File system interactions
+	
+	/**
+	 * Writes the MKM (explained in Context.java) to 
+	 * RELATIVE_MAPPER_CONTEXT_OUTPUT_FOLDER ./output/JOBNAME/mapper/
+	 * 
+	 * e.g. file created for wordCount on server 1:
+	 * 		./output/wordCount/mapper/mkmonserver1
+	 * */
+	public void writeMapperKeysMapToFile(){
+		String fileToWriteStr = Constants.RELATIVE_MAPPER_KEY_MAPS_FOLDER
+											.replace("<JOBNAME>", currentJob.getJobName())
+											+ Constants.MKM_FILE_NAME
+													.replace("<SERVERNUMBER>", ""+localServerNumber);
+
+		System.out.println("Write mapper key map for " + currentJob.getJobName() + " on server " + localServerNumber);
+		
+		FileSys.writeObjectToFile(contextVariable.getMapperKeysMap(), fileToWriteStr);
+	} 
+	
+	/**
+	 * 1. Move mapper key map file to the main server at 
+	 * 		ABSOLUTE_MAPPER_KEY_MAPS_FOLDER = "~/Project/output/JOBNAME/MKMs/"
+	 * 
+	 * 		e.g. server 1 will write this file to main server's local disk 
+	 * 		"~/Project/output/testJob/MKMs/mkmonserver1"
+	 * 
+	 * 2. delete local copy from this ec2 instance
+	 * 
+	 * */
+	public void moveMapperKeyMapFileToMainServer(){
+		
+		String fsrcStr =  Constants.RELATIVE_MAPPER_KEY_MAPS_FOLDER
+									.replace("<JOBNAME>", currentJob.getJobName())
+									+ Constants.MKM_FILE_NAME
+										.replace("<SERVERNUMBER>", ""+localServerNumber);
+		
+		String fdestStr = Constants.ABSOLUTE_MASTER_MAPPER_KEY_MAPS_FOLDER
+									.replace("<JOBNAME>", currentJob.getJobName())
+									+ Constants.MKM_FILE_NAME
+										.replace("<SERVERNUMBER>", ""+localServerNumber);
+		
+		String destIP = currentJob.getConf().getServerIPaddrMap().get(Constants.MASTER_SERVER_IP_KEY);
+		
+		try {
+			FileSys.scpCopy(fsrcStr, fdestStr, destIP);
+			
+			// TODO Delete local copy
+		} catch (SocketException e) {
+			System.err.println("Socket error while trying to send MKM object file to master server from server " + localServerNumber);
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.err.println("Unable to send MKM file to Master server from server " + localServerNumber);
+			e.printStackTrace();
+		} catch (JSchException e) {
+			System.err.println("JSch Exception while trying to move MKM file from server " + localServerNumber);
+			e.printStackTrace();
+		} catch (SftpException e) {
+			System.err.println("Sftp Exception while trying to move MKM file from server " + localServerNumber);
+			e.printStackTrace();
+		}
+	}
+	
+	
 	public String returnPhaseStatus() {
 		return phase;
 	}

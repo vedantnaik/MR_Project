@@ -31,6 +31,7 @@ public class Configuration implements Serializable{
 		// Read and store public DNSs for further communication between EC2 instances
 		serverIPaddrMap = new HashMap<Integer, String>();
 		try {
+			// TODO change to add server DNSs from file such that server number is stored against the DNS
 			addIPaddrsFromPublicDnsFile();
 			System.out.println("Read public DNS file");
 			testString = "read";
@@ -52,6 +53,8 @@ public class Configuration implements Serializable{
 	 * @throws IOException 
 	 * */
 	private void addIPaddrsFromPublicDnsFile() throws IOException {
+		// TODO : store MASTER_SERVER_IP_KEY = 9999
+		
 		BufferedReader br = new BufferedReader(new FileReader(Constants.PUBLIC_DNS_FILE));
 		String line;
 		int serverNumber = 0;

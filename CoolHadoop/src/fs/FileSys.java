@@ -55,6 +55,19 @@ public class FileSys {
 	 * ******************************************************************************************/
 
 	
+	public static void writeObjectToFile(Object objectToWrite, String relativeFilePathStr){
+		try {
+			ObjectOutputStream oos =  new ObjectOutputStream(new FileOutputStream(new File(relativeFilePathStr)));
+			oos.writeObject(objectToWrite);
+			oos.flush();
+			oos.close();
+		} catch (IOException e) {
+			System.err.println("Unable to write object intended to be written in the " + relativeFilePathStr + " file");
+			e.printStackTrace();
+		}	
+	}
+	
+	
 	
 	/********************************************************************************************
 	 * 
@@ -236,11 +249,11 @@ public class FileSys {
 	 *  
 	 * ./output/JOBNAME/mapper/KEY/valuesSERVERNUMBER.txt
 	 * */
-	public static void writeMapperValueToKeyFolder(Text key, Object value, String jobName, int localServerNumber){
+	public static void writeMapperValueToKeyFolder(Integer keyHashCode, Object value, String jobName, int localServerNumber){
 		
 		String fileNameToWriteIn = Constants.RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE
 									.replace("<JOBNAME>", jobName)
-									.replace("<KEY>", key.toString())
+									.replace("<KEY>", keyHashCode.toString())
 									.replace("<SERVERNUMBER>", localServerNumber + "");
 		
 		String valuesFileName = "/values"+localServerNumber+".txt";

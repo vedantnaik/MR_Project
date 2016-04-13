@@ -9,7 +9,8 @@ public class Constants {
 	public static final String CTX_OUTPUT_PATH_KEY = "OUTPUT_PATH";
 	public static final String INPUT_BUCKET_NAME = "INPUT_BUCKET_NAME";
 	
-	
+	// to read master server's dns from serverIPaddrMap 
+	public static final Integer MASTER_SERVER_IP_KEY = 9999;
 	
 	// File system
 	
@@ -21,7 +22,12 @@ public class Constants {
 	public static final String RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE = "./output/<JOBNAME>/mapper/<KEY>/values<SERVERNUMBER>.txt";
 	public static final String ABSOLUTE_MAPPER_CONTEXT_OUTPUT_FILE = "~/Project/output/<JOBNAME>/mapper/<KEY>/values<SERVERNUMBER>.txt";
 	
+	// MAPPER KEY MAP
+	// on main server
+	public static final String ABSOLUTE_MASTER_MAPPER_KEY_MAPS_FOLDER = "~/Project/output/<JOBNAME>/MasterMKMs/";
+	public static final String RELATIVE_MAPPER_KEY_MAPS_FOLDER = "./output/<JOBNAME>/MKMs/";
 	
+	public static final String MKM_FILE_NAME = "mkmonserver<SERVERNUMBER>";
 	
 	// --	Reducer
 	public static final String RELATIVE_REDUCER_INPUT_FOLDER = "./input/<JOBNAME>/reducer/<KEY>/";

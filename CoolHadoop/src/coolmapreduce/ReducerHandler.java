@@ -56,7 +56,7 @@ public class ReducerHandler {
 	int localServerNumber;
 
 	// get context from job for now class variable
-	Context contextVariable = new Context(currentJob, Constants.CTX_RED_PHASE, localServerNumber);
+	Context contextVariable = null;
 	
 	// Assumes each MapperHandler has a list of files to work
 	// on
@@ -67,6 +67,7 @@ public class ReducerHandler {
 	
 	public ReducerHandler(Job _currentJob){
 		currentJob = _currentJob;
+		contextVariable = new Context(currentJob, Constants.CTX_RED_PHASE, localServerNumber);
 	}
 	
 	

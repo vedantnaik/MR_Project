@@ -312,7 +312,7 @@ public class Server implements Runnable {
 		try {
 			if (receivedResult[1].contains(Constants.START)) {
 				System.out.println("STAGE 1 start");
-				mapperhandlerInstance = new MapperHandler(job);
+				mapperhandlerInstance = new MapperHandler(job, serverNumber);
 				receivingMapFiles = true;
 			}
 
