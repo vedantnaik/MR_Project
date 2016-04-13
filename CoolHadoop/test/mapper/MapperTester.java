@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import utils.Constants;
-import word.count.WordCount.TokenizerMapper;
 import coolmapreduce.Configuration;
 import coolmapreduce.Job;
 import coolmapreduce.MapperHandler;
@@ -42,7 +41,7 @@ public class MapperTester {
 		Configuration conf = new Configuration();
 		conf.set(Constants.INPUT_BUCKET_NAME, PATH);
 		Job job = Job.getInstance(conf);
-		job.setMapperClass(TokenizerMapper.class);
+//		job.setMapperClass(TokenizerMapper.class);
 		MapperHandler mh = new MapperHandler(files, job);
 		mh.runMapperHandler();		
 		

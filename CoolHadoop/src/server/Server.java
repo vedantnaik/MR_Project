@@ -11,28 +11,20 @@ import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-
-
-
-
-
-
-
-
 
 import utils.Constants;
 import coolmapreduce.Configuration;
 import coolmapreduce.Job;
 import coolmapreduce.MapperHandler;
+import coolmapreduce.ReducerHandler;
 
 /**
- * Server program which listens on the port requested or passed in the URL.
- * Contains two functions, sort and kill(itself)
+ * Server program which listens on the port 1210 or local-port 
+ * as defined by the program. It has the capability to listen and
+ * execute commands as per Master. 
+ * 
  */
 public class Server implements Runnable {
 	private Socket connection = null;
@@ -42,49 +34,60 @@ public class Server implements Runnable {
 	static int numberOfProcessors = 0;
 	static int serverNumber = 0;
 
-//	private static int serversReplied = 0;
-//	private static boolean[] replied;
-	
-//	private static int mypart_serversReplied = 0;
-
-//	private static List<Double> dataRecordPivotsList = new ArrayList<Double>(1000);
-//	private static List<Double> serverDataRecordPivotValuesList = new ArrayList<Double>();
-//	private static List<Double> globalDataRecordPivotValuesList = new ArrayList<Double>();
-//	private static List<Double> stage5ReadDataRecordList = new ArrayList<Double>(1000);
-	
-//	private static boolean distributePivotON = false;
-//	private static boolean globalPivotON = false;
-
-	private static boolean receivingMapFiles = false;
+	// the lock Object for barriers
 	static Object lock;
 
-	// List of Sockets and OutputStream
+	// List of Sockets and OutputStream for communication
 	private static Map<Integer, DataOutputStream> outDist = null;
 	private static Map<Integer, Socket> sendingSocketDist = null;
 	private static DataOutputStream outClient = null;
 	private static int totalServers;
 
+	// The MapperHandler and reduceHandler classes which call the 
+	// map and reduce functions of the framework
 	private static MapperHandler mapperhandlerInstance = null;
+	private static ReducerHandler reducerhandlerInstance = null;
 	private static Map<Job, MapperHandler> mapOfMapperHandlers = null;
 
+	
+	// the the input bucket name, the output bucket name, 
+	// the input folder inside bucket,  the output folder inside bucket
+	
 	private static String inputBucketName;
 	private static String outputBucketName;
-
 	private static String inputFolder;
 	private static String outputFolder;
-	
-//	private static List<String> fileNameList = new ArrayList<String>(100);
-	
+		
 	private static Configuration config;
 	private static Job job;
+	
+	// booleans
 	private static boolean localServersFlag = false; 
+	private static boolean receivingMapFiles = false;
 
+	
+	/**
+	 * The Server which accepts a connection and starts a new
+	 * Runnable for each connection
+	 * @param newConnection the Socket object which starts the connection
+	 * @throws UnknownHostException
+	 * @throws IOException
+	 */
 	public Server(Socket newConnection) throws UnknownHostException,
 			IOException {
 		this.connection = newConnection;
 		initOtherSockets(localServersFlag);
 	}
 
+	/**
+	 * Init the DataOutputStream, Socket and BufferedReader in a HashMap
+	 * according to the server-number for easy access for upcoming
+	 * commmunication between other Slave Servers
+	 * 
+	 * @param localServersFlag
+	 * @throws UnknownHostException
+	 * @throws IOException
+	 */
 	public void initOtherSockets(boolean localServersFlag) throws UnknownHostException, IOException {
 		System.out.println("Init Sockets");
 		
@@ -121,6 +124,7 @@ public class Server implements Runnable {
 		outputBucketName = args[2];
 		inputFolder = args[3];
 		outputFolder = args[4];
+		
 		if(args.length > 5 && args[5].equals(Constants.LOCAL))
 			localServersFlag = true;
 
@@ -180,8 +184,21 @@ public class Server implements Runnable {
 	}
 
 	/**
-	 * starts a thread which does the server stuff - sort the input requested
-	 * from client - kill itself if client says so.
+	 * Starts a thread to server the request given by the
+	 * Master program. It can 
+	 * * <p><ul>
+	 * <li> Read the serialized job from the jobfile. 
+	 *      Reply JOBREAD to the Master 
+	 * <li> 1. Receive the file names to the slaves about which 
+	 *      files to read and communicate a end of transmission: FILES_READ
+	 * <li> 3. Receive an instruction to start reading the files. 
+	 * <li> 4. Send a MAP_FINISH instruction to Master. 
+	 * <li> 5. Receive a SHUFFLEANDSORT instruction from Master
+	 * <li> 6. Send an ACK for SHUFFLEFINISH 
+	 * <li> 7. Wait for instruction to start REDUCE phase 
+	 * <li> 8. Reply for REDUCEFINISH from all servers.
+	 * </ul><p>
+	 * 
 	 */
 	public synchronized void run() {
 		try {
@@ -237,6 +254,12 @@ public class Server implements Runnable {
 		}
 	}
 
+	/**
+	 * Read the Serialized jobfile name as send by the Master program.
+	 * Reply back to the Master saying JOBREAD
+	 * @param receivedResult the Request send by Master Program
+	 * @param out the DataOutputStream to reply back to client on
+	 */
 	private void read_serialized_job(String[] receivedResult,
 			DataOutputStream out) {
 
@@ -261,6 +284,12 @@ public class Server implements Runnable {
 
 	}
 
+	/**
+	 * A splitter for the Protocol sent by the Master. 
+	 * The Protocol consists of instructions seperated by "#"
+	 * @param received the received protocol
+	 * @return the array of protocols split by "#"
+	 */
 	private String[] splitReceived(String received){
 		String[] receivedResult = new String[2];
 		if (received.contains("#")) {
@@ -271,6 +300,13 @@ public class Server implements Runnable {
 		return receivedResult;
 	}
 	
+	/**
+	 * Start the Map Files Phase. Collect all the filenames as 
+	 * send by the Master program. After the END protocol
+	 * send an ACK back to the Master saying done reading files.	 * 
+	 * @param receivedResult The array of protocols received
+	 * @param out the DataOutputStream to reply back to client on
+	 */
 	private void start_map_files_phase(String[] receivedResult,
 			DataOutputStream out) {
 
@@ -298,7 +334,9 @@ public class Server implements Runnable {
 
 
 	/**
-	 * Calls the MapperHandler as thread
+	 * Call the MapperHandler to runMapperHandler which calls
+	 * map function as defined by the defining class using
+	 * reflection 
 	 * @throws IOException 
 	 */
 	private void start_map_phase() throws IOException {
@@ -325,6 +363,10 @@ public class Server implements Runnable {
 	}
 	
 
+	/**
+	 * Call the shuffle and sort phase
+	 * @throws IOException
+	 */
 	private void start_shuffle_and_sort() throws IOException {
 		// TODO: Call functions
 		
@@ -333,6 +375,10 @@ public class Server implements Runnable {
 				Constants.SHUFFLEFINISH + "#" + serverNumber + "\n");
 	}
 	
+	/**
+	 * Call the reduce phase
+	 * @throws IOException
+	 */
 	private void start_reduce_phase() throws IOException {
 		// TODO: Call reduceHandler
 		outClient.writeBytes(

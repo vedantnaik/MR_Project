@@ -17,10 +17,8 @@ import coolmapreduce.Configuration;
 import coolmapreduce.Job;
 
 /**
- * A sample Master which connects to the slave server and can issue a 
- * sorting command with the contents of a string. It can also kill 
- * the server slaves and self destruct itself!
- *
+ * A Master which controls the slave Servers and can issue commands It can also
+ * kill the server slaves and self destruct itself!a
  */
 public class Master {
 
@@ -31,10 +29,20 @@ public class Master {
 	private static Map<Integer, BufferedReader> inFromServer = null;
 	private static int totalServers;
 	private String masterServer = null;
-	
+
 	private static Map<Integer, String> servers;
 	private static boolean localServersFlag = false;
 
+	/**
+	 * Init the DataOutputStream, Socket and BufferedReader according to the
+	 * flag specified in the Constructor. If local flag is set, the localhost is
+	 * used and the port numbers are incremented according to their server
+	 * number to provide different local-ports. If not, the DNS files of EC2
+	 * instances are used and started at port 1210
+	 * 
+	 * @param _localFlag
+	 *            boolean value telling if the slave servers are local or not
+	 */
 	public Master(boolean _localFlag) {
 		try {
 			localServersFlag = _localFlag;
@@ -56,13 +64,23 @@ public class Master {
 			System.exit(0);
 		}
 	}
-	
-	public Master(){
+
+	/**
+	 * By default sets it local Server and calls the parameterized Constructor.
+	 */
+	public Master() {
 		this(true);
 	}
 
-	public void initServerSockets()
-			throws UnknownHostException, IOException {
+	/**
+	 * Init the DataOutputStream, Socket and BufferedReader in a HashMap
+	 * according to the server-number for easy access for upcoming
+	 * commmunication between Master and Slave Servers
+	 * 
+	 * @throws UnknownHostException
+	 * @throws IOException
+	 */
+	public void initServerSockets() throws UnknownHostException, IOException {
 		System.out.println("Running LOCAL " + localServersFlag);
 		// TODO: No more master
 		masterServer = servers.get(0);
@@ -71,8 +89,8 @@ public class Master {
 				System.out.println("Connecting to localhost " + (port + i));
 				sendingSocket.put(i, new Socket("localhost", (port + i)));
 			} else {
-				System.out.println("Connecting to " + servers.get(i) +
-						"@" + (port + i));
+				System.out.println("Connecting to " + servers.get(i) + "@"
+						+ (port + i));
 				sendingSocket.put(i, new Socket(servers.get(i), port));
 			}
 
@@ -86,24 +104,54 @@ public class Master {
 
 		}
 	}
-	
-	// TODO: Should return boolean
 
+	/**
+	 * Starts the Job on the slave instances by communicating them with their
+	 * Protocols defined. It starts as follows 
+	 * <p><ul>
+	 * <li> Read the serialized job from
+	 * the jobfile. Wait for a reply till all servers have replied JOBREAD 
+	 * <li> 1. Send the file names to the slaves about which files to read and
+	 * communicate a end of transmission. 
+	 * <li> 2. Wait for an ACK saying FILES_READ
+	 * <li> 3. Send instruction to start reading the files. 
+	 * <li> 4. Wait for MAP_FINISH instruction from slaves. 
+	 * <li> 5. Send a SHUFFLEANDSORT instruction to slaves
+	 * <li> 6. Wait for an ACK for SHUFFLEFINISH 
+	 * <li> 7. Send instruction to start REDUCE phase 
+	 * <li> 8. Wait for REDUCEFINISH from all servers.
+	 * </ul><p>
+	 * 
+	 * Lastly send a KILL instruction to stop the JVM
+	 * 
+	 * @param job
+	 *            the job instance to work on
+	 * @param inputBucketName
+	 *            the input bucket name
+	 * @param outputBucketName
+	 *            the output bucket name
+	 * @param inputFolder
+	 *            the input folder inside bucket
+	 * @param outputFolder
+	 *            the output folder inside bucket
+	 * @throws IOException
+	 */
 	public void startJob(Job job, String inputBucketName,
 			String outputBucketName, String inputFolder, String outputFolder)
 			throws IOException {
+		// TODO: Should return boolean
 
 		// FileSystem myS3FS = new FileSystem(inputBucketName, outputBucketName,
 		// inputFolder, outputFolder);
 
-		// TODO: remove MapperTester
+		// TODO: remove mimicMyParts
 		Map<Integer, List<String>> partsMap = mimicMyParts();
 
 		try {
-			
+
 			// 0. Serialize Job
 			sendAConstant(Constants.READJOB, job.getJobName());
-			
+
 			// wait till job is read
 			waitForReply(Constants.JOBREAD);
 
@@ -144,7 +192,7 @@ public class Master {
 
 			// 7. Send REDUCE to all servers
 			sendAConstant(Constants.REDUCE, Constants.START);
-			
+
 			// 8. Wait for REDUCEFINISH to finish
 			waitForReply(Constants.REDUCEFINISH);
 
@@ -160,7 +208,15 @@ public class Master {
 		}
 	}
 
-	// sends a particular phase to start to all servers
+	/**
+	 * Generalized function which sends a particular phase to to all servers
+	 * 
+	 * @param _constant1
+	 *            the constant to begin
+	 * @param _beginEnd
+	 *            the begin keyword
+	 * @throws IOException
+	 */
 	private void sendAConstant(String _constant1, String _beginEnd)
 			throws IOException {
 		System.out
@@ -173,8 +229,14 @@ public class Master {
 				+ "!");
 	}
 
-	// It then waits for the Server to reply back when their phase
-	// is done.
+	/**
+	 * waits for all the slave Servers to reply back when their phase is done.
+	 * It accounts for each reply from all the Servers
+	 * 
+	 * @param waitForConstant
+	 *            the constant to wait for
+	 * @throws IOException
+	 */
 	private void waitForReply(String waitForConstant) throws IOException {
 		System.out.println("wait for reply " + waitForConstant);
 		int replies = 0;
@@ -214,9 +276,9 @@ public class Master {
 	 *            the server ip of the server eg. 127.0.0.1
 	 * @param serverPort
 	 *            the server port eg. 1212
+	 * 
 	 */
-	private void killer() throws UnknownHostException,
-			IOException {
+	private void killer() throws UnknownHostException, IOException {
 		try {
 			for (int i = 0; i < totalServers; i++) {
 				Socket sendingSocket = null;
@@ -228,7 +290,7 @@ public class Master {
 
 				DataOutputStream out = new DataOutputStream(
 						sendingSocket.getOutputStream());
-				out.writeBytes(Constants.KILL+ "#" + "\n");
+				out.writeBytes(Constants.KILL + "#" + "\n");
 				out.close();
 				sendingSocket.close();
 			}
@@ -244,49 +306,39 @@ public class Master {
 	 * @throws Exception
 	 */
 	/*
-	public void jobConfigurer(String args[]) throws Exception {
-		if (args.length < 4) {
-			System.out
-					.println("Usage Client <inputBucketname> <outputBucketName>"
-							+ "<inputFolder> <outputFolder> <LOCAL/nothing>");
-			System.out.println("Client some some some some LOCAL");
-			System.out.println("or");
-			System.out.println("Client some some some some");
-			System.exit(0);
-		}
-		// needs to come from FileInputPaths
-		String inputBucketName = args[0];
-		String outputBucketName = args[1];
-		String inputFolder = args[2];
-		String outputFolder = args[3];
-		if (args.length > 4 && args[4].equals(Constants.LOCAL))
-			localServersFlag = true;
-
-		System.out.println("Input bucket: " + inputBucketName);
-		System.out.println("Output bucket: " + outputBucketName);
-		System.out.println("Input folder: " + inputFolder);
-		System.out.println("Output folder: " + outputFolder);
-		System.out.println("Running Local ? " + localServersFlag);
-		System.out.println("Reading s3 bucket");
-		// MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder,
-		// outputFolder);
-		
-		// TODO: later change
-		System.out.println("reading config");
-		config = new Configuration();
-		
-		
-		System.out.println("connecting to servers");
-		Master master = new Master();
-		System.out.println("Connected to all Servers!");
-		System.out.println("Informing servers to begin!");
-		
-		
-		startJob(config, inputBucketName, outputBucketName, inputFolder,
-				outputFolder);
-		Thread.sleep(1000000000);
-	}
-	*/
+	 * public void jobConfigurer(String args[]) throws Exception { if
+	 * (args.length < 4) { System.out
+	 * .println("Usage Client <inputBucketname> <outputBucketName>" +
+	 * "<inputFolder> <outputFolder> <LOCAL/nothing>");
+	 * System.out.println("Client some some some some LOCAL");
+	 * System.out.println("or");
+	 * System.out.println("Client some some some some"); System.exit(0); } //
+	 * needs to come from FileInputPaths String inputBucketName = args[0];
+	 * String outputBucketName = args[1]; String inputFolder = args[2]; String
+	 * outputFolder = args[3]; if (args.length > 4 &&
+	 * args[4].equals(Constants.LOCAL)) localServersFlag = true;
+	 * 
+	 * System.out.println("Input bucket: " + inputBucketName);
+	 * System.out.println("Output bucket: " + outputBucketName);
+	 * System.out.println("Input folder: " + inputFolder);
+	 * System.out.println("Output folder: " + outputFolder);
+	 * System.out.println("Running Local ? " + localServersFlag);
+	 * System.out.println("Reading s3 bucket"); // MRFS = new
+	 * FileSystem(inputBucketName, outputBucketName, inputFolder, //
+	 * outputFolder);
+	 * 
+	 * // TODO: later change System.out.println("reading config"); config = new
+	 * Configuration();
+	 * 
+	 * 
+	 * System.out.println("connecting to servers"); Master master = new
+	 * Master(); System.out.println("Connected to all Servers!");
+	 * System.out.println("Informing servers to begin!");
+	 * 
+	 * 
+	 * startJob(config, inputBucketName, outputBucketName, inputFolder,
+	 * outputFolder); Thread.sleep(1000000000); }
+	 */
 
 	public static String PATH = "C://Users//Dixit_Patel//Google Drive//Working on a dream//StartStudying//sem4//MapReduce//homeworks//hw8-Distributed Sorting//MR_Project//CoolHadoop//resources";
 
