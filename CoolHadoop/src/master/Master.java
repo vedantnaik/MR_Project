@@ -1,4 +1,4 @@
-package client;
+package master;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -14,14 +14,15 @@ import java.util.Map;
 
 import utils.Constants;
 import coolmapreduce.Configuration;
+import coolmapreduce.Job;
 
 /**
- * A sample client which connects to the server and can issue a sorting command
- * with the contents of a string. It can also kill the server and self destruct
- * itself!
+ * A sample Master which connects to the slave server and can issue a 
+ * sorting command with the contents of a string. It can also kill 
+ * the server slaves and self destruct itself!
  *
  */
-public class Client {
+public class Master {
 
 	static int port = 1210;
 
@@ -30,12 +31,13 @@ public class Client {
 	private static Map<Integer, BufferedReader> inFromServer = null;
 	private static int totalServers;
 	private String masterServer = null;
-	private static Configuration config;
+	
 	private static Map<Integer, String> servers;
 	private static boolean localServersFlag = false;
 
-	public Client() {
+	public Master(boolean _localFlag) {
 		try {
+			localServersFlag = _localFlag;
 			servers = Configuration.getServerIPaddrMap();
 			totalServers = servers.size();
 			out = new HashMap<>(2 * totalServers);
@@ -44,7 +46,7 @@ public class Client {
 			System.out.println("servers are " + servers);
 			masterServer = null;
 
-			initServerSockets(localServersFlag);
+			initServerSockets();
 
 		} catch (IOException e) {
 			System.out.println("Unable to connect to all servers! "
@@ -54,16 +56,23 @@ public class Client {
 			System.exit(0);
 		}
 	}
+	
+	public Master(){
+		this(true);
+	}
 
-	public void initServerSockets(boolean localServersFlag)
+	public void initServerSockets()
 			throws UnknownHostException, IOException {
-
+		System.out.println("Running LOCAL " + localServersFlag);
+		// TODO: No more master
+		masterServer = servers.get(0);
 		for (int i = 0; i < totalServers; i++) {
-
-			masterServer = servers.get(i);
 			if (localServersFlag) {
+				System.out.println("Connecting to localhost " + (port + i));
 				sendingSocket.put(i, new Socket("localhost", (port + i)));
 			} else {
+				System.out.println("Connecting to " + servers.get(i) +
+						"@" + (port + i));
 				sendingSocket.put(i, new Socket(servers.get(i), port));
 			}
 
@@ -77,8 +86,10 @@ public class Client {
 
 		}
 	}
+	
+	// TODO: Should return boolean
 
-	public void startJob(Configuration config, String inputBucketName,
+	public void startJob(Job job, String inputBucketName,
 			String outputBucketName, String inputFolder, String outputFolder)
 			throws IOException {
 
@@ -89,6 +100,12 @@ public class Client {
 		Map<Integer, List<String>> partsMap = mimicMyParts();
 
 		try {
+			
+			// 0. Serialize Job
+			sendAConstant(Constants.READJOB, job.getJobName());
+			
+			// wait till job is read
+			waitForReply(Constants.JOBREAD);
 
 			// 1. Sending files to server
 			for (int i = 0; i < totalServers; i++) {
@@ -135,7 +152,7 @@ public class Client {
 
 			System.out.println("Stopping Servers");
 
-			killer(localServersFlag);
+			killer();
 
 		} catch (Exception e) {
 			System.out.println("Cannot connect to the Server");
@@ -198,7 +215,7 @@ public class Client {
 	 * @param serverPort
 	 *            the server port eg. 1212
 	 */
-	private void killer(boolean localServersFlag) throws UnknownHostException,
+	private void killer() throws UnknownHostException,
 			IOException {
 		try {
 			for (int i = 0; i < totalServers; i++) {
@@ -211,7 +228,7 @@ public class Client {
 
 				DataOutputStream out = new DataOutputStream(
 						sendingSocket.getOutputStream());
-				out.writeBytes("kill#" + "\n");
+				out.writeBytes(Constants.KILL+ "#" + "\n");
 				out.close();
 				sendingSocket.close();
 			}
@@ -226,7 +243,8 @@ public class Client {
 	 * @param args
 	 * @throws Exception
 	 */
-	public static void main(String args[]) throws Exception {
+	/*
+	public void jobConfigurer(String args[]) throws Exception {
 		if (args.length < 4) {
 			System.out
 					.println("Usage Client <inputBucketname> <outputBucketName>"
@@ -236,7 +254,7 @@ public class Client {
 			System.out.println("Client some some some some");
 			System.exit(0);
 		}
-
+		// needs to come from FileInputPaths
 		String inputBucketName = args[0];
 		String outputBucketName = args[1];
 		String inputFolder = args[2];
@@ -252,15 +270,23 @@ public class Client {
 		System.out.println("Reading s3 bucket");
 		// MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder,
 		// outputFolder);
+		
+		// TODO: later change
+		System.out.println("reading config");
 		config = new Configuration();
+		
+		
 		System.out.println("connecting to servers");
-		Client client = new Client();
+		Master master = new Master();
 		System.out.println("Connected to all Servers!");
 		System.out.println("Informing servers to begin!");
-		client.startJob(config, inputBucketName, outputBucketName, inputFolder,
+		
+		
+		startJob(config, inputBucketName, outputBucketName, inputFolder,
 				outputFolder);
 		Thread.sleep(1000000000);
 	}
+	*/
 
 	public static String PATH = "C://Users//Dixit_Patel//Google Drive//Working on a dream//StartStudying//sem4//MapReduce//homeworks//hw8-Distributed Sorting//MR_Project//CoolHadoop//resources";
 

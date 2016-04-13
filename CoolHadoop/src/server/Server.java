@@ -4,8 +4,10 @@ package server;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -17,9 +19,13 @@ import java.util.Map;
 
 
 
-import client.Client;
+
+
+
+
+
+
 import utils.Constants;
-import word.count.WordCount.TokenizerMapper;
 import coolmapreduce.Configuration;
 import coolmapreduce.Job;
 import coolmapreduce.MapperHandler;
@@ -36,18 +42,18 @@ public class Server implements Runnable {
 	static int numberOfProcessors = 0;
 	static int serverNumber = 0;
 
-	private static int serversReplied = 0;
-	private static boolean[] replied;
+//	private static int serversReplied = 0;
+//	private static boolean[] replied;
 	
-	private static int mypart_serversReplied = 0;
+//	private static int mypart_serversReplied = 0;
 
 //	private static List<Double> dataRecordPivotsList = new ArrayList<Double>(1000);
 //	private static List<Double> serverDataRecordPivotValuesList = new ArrayList<Double>();
 //	private static List<Double> globalDataRecordPivotValuesList = new ArrayList<Double>();
 //	private static List<Double> stage5ReadDataRecordList = new ArrayList<Double>(1000);
 	
-	private static boolean distributePivotON = false;
-	private static boolean globalPivotON = false;
+//	private static boolean distributePivotON = false;
+//	private static boolean globalPivotON = false;
 
 	private static boolean receivingMapFiles = false;
 	static Object lock;
@@ -67,7 +73,7 @@ public class Server implements Runnable {
 	private static String inputFolder;
 	private static String outputFolder;
 	
-	private static List<String> fileNameList = new ArrayList<String>(100);
+//	private static List<String> fileNameList = new ArrayList<String>(100);
 	
 	private static Configuration config;
 	private static Job job;
@@ -127,17 +133,18 @@ public class Server implements Runnable {
 		// MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder,
 		// outputFolder);
 		
-		config = new Configuration();
-
 		// REMOVE1 : for now before sending Job
-		config.set(Constants.INPUT_BUCKET_NAME, Client.PATH);
-		job = Job.getInstance(config);
-		job.setMapperClass(TokenizerMapper.class);
+		config = new Configuration();
+//
+//		config.set(Constants.INPUT_BUCKET_NAME, Master.PATH);
+//		job = Job.getInstance(config);
+//		job.setMapperClass(TokenizerMapper.class);
+//		
+//		// REMOVE1 : remove till here 
+//		job = Job.getInstance(config);
 		
-		// REMOVE1 : remove till here 
-		job = Job.getInstance(config);
 		lock = new Object();
-		replied = new boolean[totalServers];
+//		replied = new boolean[totalServers];
 
 		totalServers = Configuration.getServerIPaddrMap().size();
 		numberOfProcessors = totalServers;
@@ -187,10 +194,14 @@ public class Server implements Runnable {
 					if(null != received){
 					DataOutputStream out = new DataOutputStream(
 							connection.getOutputStream());
-
+					
 					String[] receivedResult = splitReceived(received);
 
-					if (receivedResult[0].equals(Constants.MAPFILES)) {
+					if (receivedResult[0].equals(Constants.READJOB)) {
+						System.out.println("STAGE 0 " + Constants.READJOB);											
+						read_serialized_job(receivedResult, out);
+					} 					
+					else if (receivedResult[0].equals(Constants.MAPFILES)) {
 						System.out.println("STAGE 1 " + Constants.MAPFILES);											
 						start_map_files_phase(receivedResult, out);
 					} 
@@ -226,6 +237,30 @@ public class Server implements Runnable {
 		}
 	}
 
+	private void read_serialized_job(String[] receivedResult,
+			DataOutputStream out) {
+
+		try {
+			System.out.println("STAGE 0 " + Constants.READJOB);
+			System.out.println("Reading Jobname: " + receivedResult[1]);
+
+			ObjectInputStream iis = new ObjectInputStream(new FileInputStream(
+					new File(receivedResult[1])));
+			job = (Job) iis.readObject();
+			System.out.println("Job read : " + job);
+			iis.close();
+
+			outClient = out;
+			outClient.writeBytes(Constants.JOBREAD + "#" + serverNumber + "\n");
+
+		} catch (IOException | ClassNotFoundException e) {
+			System.out.println("Error in Sending Data via Sockets or");
+			System.out.println("Job class not found");
+			e.printStackTrace();
+		}
+
+	}
+
 	private String[] splitReceived(String received){
 		String[] receivedResult = new String[2];
 		if (received.contains("#")) {
@@ -250,7 +285,7 @@ public class Server implements Runnable {
 				System.out.println("STAGE 1 " + "receiving files ends");
 
 				receivingMapFiles = false;
-				outClient = out;
+				
 				outClient.writeBytes(
 						Constants.FILES_READ + "#" + serverNumber + "\n");
 			}
@@ -271,23 +306,22 @@ public class Server implements Runnable {
 
 		// Calling Mapper Handler thread
 		System.out.println("Mapper Starts");
-		
+
 		try {
 			// later split and start multiple mappers with threads
 			mapperhandlerInstance.runMapperHandler();
-
 		} catch (Exception e) {
 			e.printStackTrace();
 			// send to Master only
-			System.out.println("Sending " + Constants.MAPFAILURE + " to Master");
+			System.out.println("Sending " + 
+					Constants.MAPFAILURE + " to Master");
 			outDist.get(0).writeBytes(
-						Constants.MAPFAILURE + "#" + serverNumber + "\n");		
+					Constants.MAPFAILURE + "#" + serverNumber + "\n");
 		}
 		System.out.println("Mapper Ends");
-		
+
 		// reply MAPFINISH#Number to Master
-		outClient.writeBytes(
-				Constants.MAP_FINISH + "#" + serverNumber + "\n");
+		outClient.writeBytes(Constants.MAP_FINISH + "#" + serverNumber + "\n");
 	}
 	
 

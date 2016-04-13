@@ -3,21 +3,22 @@ package coolmapreduce;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 import utils.Constants;
 
-public class Configuration {
+public class Configuration implements Serializable{
 	
 	private static HashMap<Integer, String> serverIPaddrMap;
 	private static HashMap<String, String> confMap = new HashMap<String, String>();
 	
 	
 	
-	
-	
+	private static final long serialVersionUID = 1L;
+	private static String testString;
 	
 	
 	
@@ -32,6 +33,7 @@ public class Configuration {
 		try {
 			addIPaddrsFromPublicDnsFile();
 			System.out.println("Read public DNS file");
+			testString = "read";
 		} catch (IOException e) {
 			System.err.println("Unable to read file " + Constants.PUBLIC_DNS_FILE);
 			e.printStackTrace();
@@ -83,6 +85,10 @@ public class Configuration {
 		Configuration.serverIPaddrMap = serverIPaddrMap;
 	}
 	
-	
+	@Override
+	public String toString() {
+		return "serverIPaddrMap: " + serverIPaddrMap + "\n" 
+				+ "confMap: " + confMap + "\n" + "test " + testString;
+	}
 	
 }

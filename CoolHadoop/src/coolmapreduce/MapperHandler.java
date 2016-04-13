@@ -109,9 +109,12 @@ public class MapperHandler {
 		System.out.println("Invoking map function");
 		Method map;
 		try {
+			System.out.println("invoking map ");
 			map = classVariable.getMethod("map", keyInClass, keyOutClass,
 					contextClass);
-
+			System.out.println("config " + Job.getConf());
+			System.out.println("file " + "bucket " + Job.getConf().get(Constants.INPUT_BUCKET_NAME)
+					+ " file " + file);
 			for (String line : FileSys
 					.readInputStringsFromLocalInputBucket(
 							Job.getConf().get(Constants.INPUT_BUCKET_NAME),

@@ -39,6 +39,9 @@ public class Constants {
 
 	public static final String EC2_USERNAME = "ubuntu";
 	public static final int SSH_PORT = 22;
+	public static final String READJOB = "READ_JOB";
+	public static final String JOBREAD = "JOB_READ";
+	
 	public static final String MAPFILES = "MAP_FILES";
 	
 	public static final String MAP = "MAP";	

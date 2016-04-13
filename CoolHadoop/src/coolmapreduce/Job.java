@@ -1,11 +1,29 @@
 package coolmapreduce;
 
-public class Job {
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+
+import utils.Constants;
+import master.Master;
+
+public class Job implements Serializable{
+
 	
-	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	String jobName;
 	
-	static Configuration conf;
+	public static Configuration conf;
 	Class jarByClass;
 	Class mapperClass;
 	Class reducerClass;
@@ -18,23 +36,20 @@ public class Job {
 	
 	//singleton class which returns job object itself 
 	//This will have getInstance which takes config object
-	private Job(){}
+	private Job(){
+	}
 	
 	public static Job getInstance(Configuration _conf){
 		if(ref == null) {
 			ref = new Job();
-		}
-		
-		// Instantiate Job class
-		
+		}		
+		// Instantiate Job class	
 		conf = _conf;
-		
-		
 		return ref;
 	}
 	
-	private static Job ref;
-
+	private static Job ref = new Job();
+	
 	public String getJobName() {
 		return jobName;
 	}
@@ -47,8 +62,8 @@ public class Job {
 		return conf;
 	}
 
-	public static void setConf(Configuration conf) {
-		Job.conf = conf;
+	public void setConf(Configuration _conf) {
+		conf = _conf;
 	}
 
 	public Class getJarByClass() {
@@ -107,7 +122,19 @@ public class Job {
 		return outputValueClass;
 	}
 	
-	public boolean waitForCompletion() {
+	@Override
+	public String toString() {
+		return "Configuration: " + getConf() + "\n" + " JobName " + getJobName();
+	}
+	
+	/**
+	 * Submit the job to the slave servers and wait for it to finish.
+	 * @param verbose print the progress to the user
+	 * @return true if the job succeeded
+	 * @throws IOException 
+	 */
+
+	public boolean waitForCompletion(boolean verbose) throws IOException {
 		// TODO:
 		// write "this" object to file (jobfile_jobname)
 		// Tried in test program, works
@@ -117,8 +144,55 @@ public class Job {
 		// the jobfile_jobname
 		// starts Map and co-ordinates till end of job 
 		// to return true
+		
+		System.out.println("serializing this " + this);
+		// serialize job
+		ObjectOutputStream oos = new ObjectOutputStream(
+				new FileOutputStream(this.getJobName()));
+        oos.writeObject(this);
+        oos.flush();
+        oos.close();
+		
+        // TODO: Master by default is local, specify false if on Server
+		Master master = new Master();
+		
+		// TODO: Split the path's and startJob should return bool
+		master.startJob(this, getConf().get(Constants.CTX_INPUT_PATH_KEY), 
+				"", 
+				getConf().get(Constants.CTX_OUTPUT_PATH_KEY), 
+				"");
 	
 		return true;
 	}
 	
+//	public boolean waitForCompletion2() throws FileNotFoundException, IOException, ClassNotFoundException{
+//		
+//
+//		String str = "testtext";
+//		
+//		ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(this.getJobName()));
+//        oos.writeObject(this);
+//        oos.flush();
+//        oos.close();
+//
+//		System.out.println("End Receiver");
+//		System.out.println("reading it back");
+//		
+//		ObjectInputStream iis = new ObjectInputStream(new FileInputStream(new File(this.getJobName())));
+//		Job test = (Job) iis.readObject();
+//		System.out.println("test Job " + test);
+//		iis.close();
+//		
+//		return true;
+//	}
+//	
+//	public static void main(String[] args) throws FileNotFoundException, ClassNotFoundException, IOException {
+//		Configuration _conf = new Configuration();
+//		_conf.set("WHO", "SERVER");
+//		Job obj = Job.getInstance(_conf);
+//		obj.setJobName("mytest");	
+//		if(obj.waitForCompletion2()){
+//			System.out.println("true");
+//		}
+//	}
 }
