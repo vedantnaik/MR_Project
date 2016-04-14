@@ -146,10 +146,10 @@ public class MapperHandler {
 			map = classVariable.getMethod("map", keyInClass, keyOutClass,
 					contextClass);
 
-			for (String line : FileSys
-					.readInputStringsFromLocalInputBucket(
-							currentJob.getConf().get(Constants.INPUT_BUCKET_NAME),
-							file)) {
+				for (String line : FileSys
+						.readGZippedInputStringsFromInputS3Bucket(
+								currentJob.getConf().get(Constants.INPUT_BUCKET_NAME),
+								file)) {
 
 				// System.out.println("Reading " + line);
 

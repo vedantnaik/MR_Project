@@ -28,7 +28,6 @@ public class Master {
 	private static Map<Integer, Socket> sendingSocket = null;
 	private static Map<Integer, BufferedReader> inFromServer = null;
 	private static int totalServers;
-	private String masterServer = null;
 
 	private static Map<Integer, String> servers;
 	private static boolean localServersFlag = false;
@@ -54,13 +53,11 @@ public class Master {
 			sendingSocket = new HashMap<>(2 * totalServers);
 			inFromServer = new HashMap<>(2 * totalServers);
 			System.out.println("servers are " + servers);
-			masterServer = null;
-
+			System.out.println("Configured Local? " + localServersFlag);
 			initServerSockets();
 
 		} catch (IOException e) {
-			System.out.println("Unable to connect to all servers! "
-					+ masterServer);
+			System.out.println("Unable to connect to all servers! ");
 
 			e.printStackTrace();
 			System.exit(0);
@@ -83,9 +80,8 @@ public class Master {
 	 * @throws IOException
 	 */
 	public void initServerSockets() throws UnknownHostException, IOException {
-		System.out.println("Running LOCAL " + localServersFlag);
-		// TODO: No more master
-		masterServer = servers.get(0);
+//		System.out.println("Running LOCAL " + localServersFlag);
+		
 		for (int i = 0; i < totalServers; i++) {
 			if (localServersFlag) {
 				System.out.println("Connecting to localhost " + (port + i));

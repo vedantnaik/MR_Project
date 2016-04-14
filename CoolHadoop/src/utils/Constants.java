@@ -1,6 +1,8 @@
 package utils;
 
 public class Constants {
+	
+	public static final String PROJECT_HOME = "/home/ubuntu/Project/";
 
 	public static final String PUBLIC_DNS_FILE = "publicDnsFile.txt";
 	
@@ -41,7 +43,8 @@ public class Constants {
 	public static final String RELATIVE_REDUCER_OUTPUT_FILE = "./output/<JOBNAME>/reducer/part-XXXXX";
 	
 	// Network communication
-	public static final String PEM_FILE_PATH = "./configFiles/MyKeyPair.pem";
+	// NOTE: Changing from ./configFiles to ./credentials
+	public static final String PEM_FILE_PATH = "~/Project/credentials/MyKeyPair.pem";
 
 	public static final String EC2_USERNAME = "ubuntu";
 	public static final int SSH_PORT = 22;

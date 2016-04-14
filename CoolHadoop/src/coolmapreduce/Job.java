@@ -4,7 +4,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.SocketException;
+import java.util.Map;
 
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
+
+import fs.FileSys;
 import master.Master;
 import utils.Constants;
 
@@ -150,29 +156,50 @@ public class Job implements Serializable {
 	 *            print the progress to the user
 	 * @return true if the job succeeded
 	 * @throws IOException
+	 * @throws SftpException 
+	 * @throws JSchException 
 	 */
 
-	public boolean waitForCompletion(boolean verbose) throws IOException {
+	public boolean waitForCompletion(boolean verbose) throws IOException, JSchException, SftpException  {
 		// TODO:
 		// write "this" object to file (jobfile_jobname)
 		// Tried in test program, works
 
 		System.out.println("serializing this " + this);
-		// serialize job
-		ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(
-				this.getJobName() + Constants.JOBEXTN));
-		oos.writeObject(this);
-		oos.flush();
-		oos.close();
+		
+		String jobFilename = this.getJobName() + Constants.JOBEXTN;
+		serializeThisAsFilename(this, jobFilename);
+		moveToSlaves(jobFilename);
 
 		// TODO: Master by default is local, specify false if on Server
-		Master master = new Master(getConf());
+		Master master = new Master(getConf(), false);
 
 		// TODO: Split the path's and startJob should return boolean
 		master.startJob(this, getConf().get(Constants.CTX_INPUT_PATH_KEY), "",
 				getConf().get(Constants.CTX_OUTPUT_PATH_KEY), "");
 
 		return true;
+	}
+	
+	public void serializeThisAsFilename(Object thisVar, String asFileName) throws IOException{
+		// serialize job
+		ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(
+				asFileName));
+		oos.writeObject(this);
+		oos.flush();
+		oos.close();
+	}
+	
+	public void moveToSlaves(String filename) throws SocketException, IOException, JSchException, SftpException{
+		
+		for(Map.Entry<Integer, String> ip : getConf().getServerIPaddrMap().entrySet()){
+			
+			String fullPath = Constants.PROJECT_HOME + filename;
+			System.out.println("moving " + filename + " to " + 
+					fullPath + " @ " + ip.getValue());
+			FileSys.scpCopy(filename, fullPath, ip.getValue());
+		}
+		
 	}
 
 }
