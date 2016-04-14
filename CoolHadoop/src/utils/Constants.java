@@ -9,10 +9,20 @@ public class Constants {
 	// confMap keys
 	public static final String CTX_INPUT_PATH_KEY = "INPUT_PATH";
 	public static final String CTX_OUTPUT_PATH_KEY = "OUTPUT_PATH";
+	
 	public static final String INPUT_BUCKET_NAME = "INPUT_BUCKET_NAME";
+	public static final String OUTPUT_BUCKET_NAME = "OUTPUT_BUCKET_NAME";
+
+	public static final String INPUT_FOLDER = "INPUT_FOLDER";
+	public static final String OUTPUT_FOLDER = "OUTPUT_FOLDER";
+	
+	public static final String S3PREFIX = "s3://";
+	public static Integer BUCKET_INT = 0;
+	public static Integer OBJECT_INT = 1;
+	
 	
 	// to read master server's dns from serverIPaddrMap 
-	public static final Integer MASTER_SERVER_IP_KEY = 9999;
+	public static final String MASTER_SERVER_IP_KEY = "MASTER_SERVER_DNS";
 	
 	// File system
 	

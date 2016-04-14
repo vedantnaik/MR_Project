@@ -146,6 +146,8 @@ public class MapperHandler {
 			map = classVariable.getMethod("map", keyInClass, keyOutClass,
 					contextClass);
 
+			System.out.println("reading from bucketname " + currentJob.getConf().get(Constants.INPUT_BUCKET_NAME)
+					+ " Object " + file);
 				for (String line : FileSys
 						.readGZippedInputStringsFromInputS3Bucket(
 								currentJob.getConf().get(Constants.INPUT_BUCKET_NAME),
@@ -281,8 +283,8 @@ public class MapperHandler {
 									+ Constants.MKM_FILE_NAME
 										.replace("<SERVERNUMBER>", ""+localServerNumber);
 		
-		String destIP = currentJob.getConf().getServerIPaddrMap().get(Constants.MASTER_SERVER_IP_KEY);
-		
+		String destIP = currentJob.getConf().get(Constants.MASTER_SERVER_IP_KEY);
+						
 		try {
 			FileSys.scpCopy(fsrcStr, fdestStr, destIP);
 			

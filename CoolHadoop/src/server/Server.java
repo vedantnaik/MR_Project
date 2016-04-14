@@ -271,7 +271,7 @@ public class Server implements Runnable {
 					new File(receivedResult[1]+Constants.JOBEXTN)));
 			job = (Job) iis.readObject();
 			iis.close();
-
+			System.out.println("job details " + job);
 			outClient = out;
 			outClient.writeBytes(Constants.JOBREAD + "#" + serverNumber + "\n");
 

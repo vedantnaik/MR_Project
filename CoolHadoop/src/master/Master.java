@@ -8,11 +8,21 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import utils.Constants;
+
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+
 import coolmapreduce.Configuration;
 import coolmapreduce.Job;
 
@@ -139,11 +149,9 @@ public class Master {
 			throws IOException {
 		// TODO: Should return boolean
 
-		// FileSystem myS3FS = new FileSystem(inputBucketName, outputBucketName,
-		// inputFolder, outputFolder);
 
 		// TODO: remove mimicMyParts
-		Map<Integer, List<String>> partsMap = mimicMyParts();
+		Map<Integer, List<String>> partsMap = getS3Parts(inputBucketName, inputFolder, totalServers);
 
 		try {
 
@@ -337,24 +345,76 @@ public class Master {
 	 * startJob(config, inputBucketName, outputBucketName, inputFolder,
 	 * outputFolder); Thread.sleep(1000000000); }
 	 */
+//
+//	public static String PATH = "C://Users//Dixit_Patel//Google Drive//Working on a dream//StartStudying//sem4//MapReduce//homeworks//hw8-Distributed Sorting//MR_Project//CoolHadoop//resources";
+//
+//	public static List<String> getStupidFiles() {
+//		List<String> files = new ArrayList<>();
+//		files.add("alice.txt.gz");
+//
+//		for (int i = 0; i < 3; i++)
+//			files.add("alice.txt.gz");
+//
+//		return files;
+//	}
+//
+//	public static Map<Integer, List<String>> mimicMyParts() {
+//		Map<Integer, List<String>> parts = new HashMap<>();
+//		for (int i = 0; i < 3; i++)
+//			parts.put(i, getStupidFiles());
+//
+//		return parts;
+//	}
+	
+	public List<String> getObjectSummariesForBucket(String inputBucketName, String inputFolder){
+		List<String> objectSummaries = new ArrayList<>();
+		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+		AmazonS3 s3client = new AmazonS3Client(credentials);
+		
+		ObjectListing objList = s3client.listObjects(inputBucketName);
 
-	public static String PATH = "C://Users//Dixit_Patel//Google Drive//Working on a dream//StartStudying//sem4//MapReduce//homeworks//hw8-Distributed Sorting//MR_Project//CoolHadoop//resources";
-
-	public static List<String> getStupidFiles() {
-		List<String> files = new ArrayList<>();
-		files.add("alice.txt.gz");
-
-		for (int i = 0; i < 3; i++)
-			files.add("alice.txt.gz");
-
-		return files;
+		for(S3ObjectSummary objSum : objList.getObjectSummaries() ){
+			if(objSum.getKey().contains(inputFolder)){
+				objectSummaries.add(objSum.getKey() + ":" + objSum.getSize());
+			}
+		}
+		
+		return objectSummaries;
 	}
-
-	public static Map<Integer, List<String>> mimicMyParts() {
-		Map<Integer, List<String>> parts = new HashMap<>();
-		for (int i = 0; i < 3; i++)
-			parts.put(i, getStupidFiles());
-
-		return parts;
+	
+	
+	/**
+	 * Divide the files among servers such that every server handles roughly same amount of data
+	 * */
+	public Map<Integer, List<String>> getS3Parts(String inputBucketName, String inputFolder, int parts){
+		List<String> objectSummaries = getObjectSummariesForBucket(inputBucketName, inputFolder);
+		Collections.sort((objectSummaries), new Comparator<String>() {
+			@Override
+			public int compare(String o1, String o2) {
+				int val1 = Integer.parseInt(o1.split(":")[1]);
+				int val2 = Integer.parseInt(o2.split(":")[1]);
+				if(val1 > val2) {return 1;}
+				if(val1 < val2) {return -1;}
+				return 0;
+			}
+		});
+		
+		Map<Integer, List<String>> partitionMap = new HashMap<>(); 
+	
+		int spinner = 0;
+		for (String fileNameSize : objectSummaries){
+			if(spinner == parts) {spinner = 0;}
+			
+			if(!partitionMap.containsKey(spinner)){
+				partitionMap.put(spinner, new ArrayList<String>());
+			}
+			partitionMap.get(spinner).add(fileNameSize.split(":")[0].trim());
+			
+			spinner++;
+		}
+		
+		return partitionMap;
 	}
+	
+	
 }
