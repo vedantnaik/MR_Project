@@ -2,8 +2,12 @@ package master;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -22,9 +26,13 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
 
 import coolmapreduce.Configuration;
 import coolmapreduce.Job;
+import fs.FileSys;
+import fs.shuffler.LoadDistributor;
 
 /**
  * A Master which controls the slave Servers and can issue commands It can also
@@ -55,6 +63,7 @@ public class Master {
 	 *            boolean value telling if the slave servers are local or not
 	 */
 	public Master(Configuration config, boolean _localFlag) {
+		
 		try {
 			localServersFlag = _localFlag;
 			servers = config.getServerIPaddrMap();
@@ -80,6 +89,10 @@ public class Master {
 	public Master(Configuration config) {
 		this(config, true);
 	}
+	
+	public Master(){
+		// noop
+	}
 
 	/**
 	 * Init the DataOutputStream, Socket and BufferedReader in a HashMap
@@ -98,7 +111,7 @@ public class Master {
 				sendingSocket.put(i, new Socket("localhost", (port + i)));
 			} else {
 				System.out.println("Connecting to " + servers.get(i) + "@"
-						+ (port + i));
+						+ (port));
 				sendingSocket.put(i, new Socket(servers.get(i), port));
 			}
 
@@ -189,6 +202,9 @@ public class Master {
 			waitForReply(Constants.MAP_FINISH);
 			// TODO: What todo if FAILURE? restructure fun
 			// to accomodate failure and restart on some node later
+			
+			// Send master MKM back to all slave servers
+			merge_mkms_and_send_mastermkm_back(job.getJobName());
 
 			// 5. Send SHUFFLEANDSORT to all servers
 			sendAConstant(Constants.SHUFFLEANDSORT, Constants.START);
@@ -212,6 +228,65 @@ public class Master {
 			System.out.println("Cannot connect to the Server");
 			e.printStackTrace();
 		}
+	}
+
+	private void merge_mkms_and_send_mastermkm_back(String jobName) throws FileNotFoundException, ClassNotFoundException, 
+				IOException, JSchException, SftpException {
+		// TODO Auto-generated method stub
+		//hashmap
+		
+		// each file in masterMKM
+		// merge func call
+		// set call / union 
+		// 
+		
+		Map<Integer, Object> allMKMs = readAllMKMs(jobName);
+		
+		Map<Integer, Object>  mkmBroadcastMasterMap = LoadDistributor.getLoadDistribBroadcast(allMKMs, 3);
+				
+		String masterBroadcastMapPath = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER_LOCAL
+				.replace("<JOBNAME>", jobName) + Constants.UNIX_FILE_SEPARATOR + Constants.BROADCAST_MAP;
+		
+		File fileDelete = new File(masterBroadcastMapPath);
+		fileDelete.delete();
+		
+		FileSys.writeObjectToFile(mkmBroadcastMasterMap, masterBroadcastMapPath);
+		
+		String fdest = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_MAP;
+		String fsrc = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_MAP;
+		
+		for (int i = 0; i < totalServers; i++) {
+			System.out.println("Moving MKMs from " + fsrc + "  to " + servers.get(i) + " @ "
+					+ fdest);
+			FileSys.scpCopy(fsrc, fdest, servers.get(i));			
+		}		
+		
+	}
+	
+	public Map<Integer, Object> readAllMKMs(String jobName) throws FileNotFoundException, IOException, ClassNotFoundException{
+		
+		// TODO  : change
+		String mapperOutputFolderStr = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER
+												.replace("<JOBNAME>", jobName);
+		System.out.println("mapfolder to read MKM " + mapperOutputFolderStr);
+		File mapperOutputFolder = new File(mapperOutputFolderStr);
+		
+		Map<Integer, Object> mapReadFromMKMs = new HashMap<>();
+		
+		Map<Integer, Object> allMKMs = new HashMap<>();
+		
+		for(String f : mapperOutputFolder.list()){
+		
+			ObjectInputStream iis = new ObjectInputStream(new FileInputStream(
+					new File(mapperOutputFolder+"/"+f)));
+			mapReadFromMKMs = (HashMap<Integer, Object>) iis.readObject();
+			iis.close();
+			System.out.println("Adding size of " + mapReadFromMKMs.size());
+			allMKMs.putAll(mapReadFromMKMs);
+		}
+		
+		System.out.println("All MKM's " + allMKMs.size());
+		return allMKMs;
 	}
 
 	/**
@@ -374,7 +449,7 @@ public class Master {
 		ObjectListing objList = s3client.listObjects(inputBucketName);
 
 		for(S3ObjectSummary objSum : objList.getObjectSummaries() ){
-			if(objSum.getKey().contains(inputFolder)){
+			if(objSum.getKey().contains(inputFolder) && objSum.getKey().length() > inputFolder.length() + 2){
 				objectSummaries.add(objSum.getKey() + ":" + objSum.getSize());
 			}
 		}
@@ -415,6 +490,5 @@ public class Master {
 		
 		return partitionMap;
 	}
-	
-	
+		
 }

@@ -70,7 +70,7 @@ public class Context {
 	 * disk (temp | map output)		OR
 	 * output S3 (final | reducer output)
 	 * */
-	public void write(Text keyToWrite, Text valueToWrite){
+	public void write(Text keyToWrite, Object valueToWrite){
 		if(this.writePhase.equalsIgnoreCase(Constants.CTX_MAP_PHASE)){
 			writeToMapperOutput(keyToWrite, valueToWrite);
 		} else {
@@ -84,7 +84,7 @@ public class Context {
 	 * 
 	 * Before replace the key with a hashcode of that key. Maintian the Hashcode in the mapperKeyMap
 	 * */
-	private void writeToMapperOutput(Text keyToWrite, Text valueToWrite) {
+	private void writeToMapperOutput(Text keyToWrite, Object valueToWrite) {
 		
 		this.mapperKeysMap.put(keyToWrite.hashCode(), keyToWrite);
 		
@@ -104,7 +104,7 @@ public class Context {
 	 * 		./output/<JobName>/reducer/parts/part-000<serverNumber>
 	 ********************************************************************** 
 	 * */
-	private void writeToReducerOutput(Text keyToWrite, Text valueToWrite) {
+	private void writeToReducerOutput(Text keyToWrite, Object valueToWrite) {
 		FileSys.writeReducerOutputKeyValue(keyToWrite, valueToWrite, this.currentJob.getJobName());
 	}
 

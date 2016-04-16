@@ -118,30 +118,24 @@ public class LoadDistributor {
 	 * 
 	 * */
 	
-	public static HashMap<String, Integer> getLoadDistribBroadcast(HashMap<String, Integer> serverMapperOutputKeySizerMap, int parts){
+	public static Map<Integer, Object> getLoadDistribBroadcast(Map<Integer, Object> serverMapperOutputKeySizerMap, int parts){
 		
-		HashMap<String, Integer> broadcastMap = new HashMap<String, Integer>();
+		Map<Integer, Object> broadcastMap = new HashMap<Integer, Object>();
+		
+//		System.out.println("entry set " + serverMapperOutputKeySizerMap.entrySet());
 		
 		// Sort map based on the key's sizes
-		ArrayList<Entry<String, Integer>> sortedMapperKeySizeList = new ArrayList<Entry<String, Integer>>(serverMapperOutputKeySizerMap.entrySet());
-		Collections.sort(sortedMapperKeySizeList, new Comparator<Map.Entry<String, Integer>>() {
-			@Override
-			public int compare(Entry<String, Integer> o1, Entry<String, Integer> o2) {
-				if(o1.getValue() > o2.getValue()) {return 1;}
-				if(o1.getValue() < o2.getValue()) {return -1;}
-				return 0;
-			}
-		});
-		
+		ArrayList<Entry<Integer, Object>> sortedMapperKeySizeList = new ArrayList<Entry<Integer, Object>>(serverMapperOutputKeySizerMap.entrySet());
+				
 		// assign a server to each key (used to tell servers which keys they will handle)
 		int spinner = 0;
-		for(Entry<String, Integer> e : sortedMapperKeySizeList){
-			String mapperKey = e.getKey();
+//		System.out.println("broad cast " + sortedMapperKeySizeList);
+		for(Entry<Integer, Object> e : sortedMapperKeySizeList){
+			Integer mapperKey = e.getKey();
 			if(spinner == parts) {spinner = 0;}
 			broadcastMap.put(mapperKey, spinner);
 			spinner++;
 		}
-		
 		return broadcastMap;
 	}
 	

@@ -36,10 +36,21 @@ public class Constants {
 	
 	// MAPPER KEY MAP
 	// on main server
+	public static final String MASTER_MAPPER_KEY_MAPS_FOLDER_LOCAL = "output/<JOBNAME>/MasterMKMs/";
+	
+	public static final String MASTER_MAPPER_KEY_MAPS_FOLDER = PROJECT_HOME+"/output/<JOBNAME>/MasterMKMs/";
 	public static final String ABSOLUTE_MASTER_MAPPER_KEY_MAPS_FOLDER = "~/Project/output/<JOBNAME>/MasterMKMs/";
+	
+	public static final String ABSOLUTE_MASTER_MKM_PATH_FOLDER = PROJECT_HOME + "/output/<JOBNAME>/MKMs/";
 	public static final String RELATIVE_MAPPER_KEY_MAPS_FOLDER = "./output/<JOBNAME>/MKMs/";
 	
 	public static final String MKM_FILE_NAME = "mkmonserver<SERVERNUMBER>";
+	public static final String BROADCAST_MAP = "mkmbroadcastmaster";
+	
+	public static final String ABSOLUTE_OUTPUT_LOCATION = PROJECT_HOME + "/output/";
+	public static final String ABSOLUTE_JOB_FOLDER = ABSOLUTE_OUTPUT_LOCATION + "/<JOBNAME>/";
+	public static final String ABSOLUTE_MAPPER_FOLDER = ABSOLUTE_JOB_FOLDER + "/mapper/";
+
 	
 	// --	Reducer
 	public static final String RELATIVE_REDUCER_INPUT_FOLDER = "./input/<JOBNAME>/reducer/<KEY>/";
@@ -96,6 +107,7 @@ public class Constants {
 	
 	public static final String CTX_MAP_PHASE = "CTX_MAP_PHASE";
 	public static final String CTX_RED_PHASE = "CTX_RED_PHASE";
+
 
 
 

@@ -368,7 +368,8 @@ public class Server implements Runnable {
 	 */
 	private void start_shuffle_and_sort() throws IOException {
 		// TODO: Call functions
-		
+		// read the master MKM and send the files to the reducer 
+		// for corresponding server#
 		
 		outClient.writeBytes(
 				Constants.SHUFFLEFINISH + "#" + serverNumber + "\n");

@@ -35,4 +35,9 @@ public class IntWritable implements Serializable  {
 		// TODO Auto-generated method stub
 		return value+"";
 	}
+	
+	@Override
+	public int hashCode() {
+		return value;
+	}
 }

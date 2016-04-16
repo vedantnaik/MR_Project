@@ -27,4 +27,16 @@ public class Text implements Serializable{
 	public void set(String _text){
 		text = _text;
 	}
+	
+	@Override
+	public int hashCode() {
+		return text.hashCode();
+	}
+	
+//	@Override
+//	public boolean equals(Object obj) {
+//		// TODO Auto-generated method stub
+//		return text.equals((Text) obj);
+//	}
+	
 }

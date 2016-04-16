@@ -3,16 +3,22 @@ package coolmapreduce;
 import fs.FileSys;
 import io.Text;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.SocketException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.SftpException;
+import org.apache.commons.io.FileUtils;
 
 import utils.Constants;
+
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
 
 public class MapperHandler {
 
@@ -191,6 +197,8 @@ public class MapperHandler {
 			// setting anything except Text if MapOutputValueClass
 			if (null != currentJob.getMapOutputValueClass())
 				valueOutClass = currentJob.getMapOutputValueClass();
+		
+			make_folders_cleanup_files();
 
 		} catch (Exception e1) {
 			System.out.println("Error finding class in JVM "
@@ -198,6 +206,64 @@ public class MapperHandler {
 			e1.printStackTrace();
 			throw e1;
 		}
+	}
+
+	/**
+	 * creates the following hierarchy
+	 * 			
+			├── output
+			│   └── mywordcount
+			│       ├── mapper
+			│       └── MKMs
+						|_ mkmonserver<servernumber>	
+							
+	 */
+	private void make_folders_cleanup_files() {
+		// TODO Auto-generated method stub
+		
+		File fileDelete = new File("");
+		fileDelete.delete();
+		
+		try {	
+			System.out.println("recursively deleting " + Constants.ABSOLUTE_OUTPUT_LOCATION);
+			FileUtils.deleteDirectory(new File(Constants.ABSOLUTE_OUTPUT_LOCATION));
+			
+			System.out.println("recreating it ");
+			File outputFolder = new File(Constants.ABSOLUTE_OUTPUT_LOCATION);
+			outputFolder.mkdir();
+			
+			//make job folder
+			String outputJobFolderName = Constants.ABSOLUTE_JOB_FOLDER.replace("<JOBNAME>", currentJob.getJobName());
+			System.out.println("create output job Folder " + outputJobFolderName);
+			File outputJobFolder = new File(outputJobFolderName);
+			outputJobFolder.mkdir();
+
+			// create mapper folder
+			String mapperFolderName = Constants.ABSOLUTE_MAPPER_FOLDER.replace("<JOBNAME>", currentJob.getJobName());
+			System.out.println("create mapper folder " + mapperFolderName);
+			File mapperFolder = new File(mapperFolderName);
+			mapperFolder.mkdir();
+			
+			// create MKM folder
+			
+			String mkmFolderName = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER.replace("<JOBNAME>", currentJob.getJobName());
+			System.out.println("creating mkm folder " + mkmFolderName);
+			File mkmFolder = new File(mkmFolderName);
+			mkmFolder.mkdir();
+			
+			String mkmFileForServer = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER.replace("<JOBNAME>", currentJob.getJobName())
+					+ Constants.MKM_FILE_NAME.replace("<SERVERNUMBER>", localServerNumber+"");
+			System.out.println("create mkmfile for server " + mkmFileForServer);
+			// create empty file for MKM
+			
+			File newmkmFile = new File(mkmFileForServer);
+			newmkmFile.createNewFile();
+			
+		} catch (IOException e) {
+			System.out.println("Unable to do make_folders_cleanup_files from Mapper");
+			e.printStackTrace();
+		}
+
 	}
 
 	public void mapperHandlerSetup() throws Exception {
@@ -278,7 +344,7 @@ public class MapperHandler {
 									+ Constants.MKM_FILE_NAME
 										.replace("<SERVERNUMBER>", ""+localServerNumber);
 		
-		String fdestStr = Constants.ABSOLUTE_MASTER_MAPPER_KEY_MAPS_FOLDER
+		String fdestStr = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER
 									.replace("<JOBNAME>", currentJob.getJobName())
 									+ Constants.MKM_FILE_NAME
 										.replace("<SERVERNUMBER>", ""+localServerNumber);
@@ -286,6 +352,7 @@ public class MapperHandler {
 		String destIP = currentJob.getConf().get(Constants.MASTER_SERVER_IP_KEY);
 						
 		try {
+			System.out.println("scp from " + fsrcStr + " deststr " + fdestStr);
 			FileSys.scpCopy(fsrcStr, fdestStr, destIP);
 			
 			// TODO Delete local copy
@@ -329,4 +396,10 @@ public class MapperHandler {
 		return listOfMapperFiles.add(_file);
 	}
 	
+	public static void main(String[] args) {
+		Job _currentJob = Job.getInstance(null);
+		_currentJob.setJobName("mywordcount");
+		MapperHandler handle = new MapperHandler(_currentJob, 0);
+		handle.make_folders_cleanup_files();
+	}
 }

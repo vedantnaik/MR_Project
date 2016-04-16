@@ -193,6 +193,9 @@ public class Job implements Serializable {
 		serializeThisAsFilename(this, jobFilename);
 		moveToSlaves(jobFilename);
 
+		// TODO: make folder here
+		// "~/Project/output/<JOBNAME>/MasterMKMs/"
+		
 		// TODO: Master by default is local, specify false if on Server
 		Master master = new Master(getConf(), false);
 

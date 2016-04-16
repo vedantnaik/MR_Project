@@ -60,6 +60,12 @@ public class Configuration implements Serializable{
 			serverIPaddrMap.put(serverNumber++, line.trim());
 		}
 		br.close();
+		
+		confMap.put(Constants.MASTER_SERVER_IP_KEY, 
+					serverIPaddrMap.get(serverIPaddrMap.size() - 1));
+
+		serverIPaddrMap.remove(serverIPaddrMap.size() - 1);
+		
 	}
 
 	

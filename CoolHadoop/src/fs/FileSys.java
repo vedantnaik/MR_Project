@@ -258,8 +258,12 @@ public class FileSys {
 		
 		String valuesFileName = "/values"+localServerNumber+".txt";
 		File folderToWriteIn = new File(fileNameToWriteIn.replace(valuesFileName, ""));
+		
+//		System.out.println("\tfileNameToWriteIn " + fileNameToWriteIn + " with " + folderToWriteIn);
+		
 		if(!folderToWriteIn.isDirectory()){
 			folderToWriteIn.mkdir();
+//			System.out.println("\tMaking new Dir for Key " + keyHashCode);
 			try {
 				ObjectOutputStream oos = getOOS(new File(fileNameToWriteIn));
 		        oos.writeObject(value);
@@ -401,7 +405,7 @@ public class FileSys {
 	 * 
 	 * USAGE: Context.write() when in CTX_RED_PHASE
 	 * */
-	public static void writeReducerOutputKeyValue(Text key, Text value, String currentJobName){
+	public static void writeReducerOutputKeyValue(Text key, Object value, String currentJobName){
 		
 		String fileToWriteInStr = Constants.RELATIVE_REDUCER_OUTPUT_FILE
 										.replace("<JOBNAME>", currentJobName);
