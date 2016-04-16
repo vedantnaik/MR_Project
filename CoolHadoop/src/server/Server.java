@@ -19,6 +19,7 @@ import coolmapreduce.Configuration;
 import coolmapreduce.Job;
 import coolmapreduce.MapperHandler;
 import coolmapreduce.ReducerHandler;
+import fs.shuffler.LoadDistributor;
 
 /**
  * Server program which listens on the port 1210 or local-port 
@@ -349,7 +350,7 @@ public class Server implements Runnable {
 			mapperhandlerInstance.runMapperHandler();
 		} catch (Exception e) {
 			e.printStackTrace();
-			// send to Master only
+			// send to Master only, change numbers for master
 			System.out.println("Sending " + 
 					Constants.MAPFAILURE + " to Master");
 			outDist.get(0).writeBytes(
@@ -370,6 +371,24 @@ public class Server implements Runnable {
 		// TODO: Call functions
 		// read the master MKM and send the files to the reducer 
 		// for corresponding server#
+		HashMap<Integer, Object> mapReadFromMKMs = null;
+		try {
+		String masterBroadcastMap = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER
+				.replace("<JOBNAME>", job.getJobName()) + Constants.BROADCAST_MAP;
+		
+		ObjectInputStream iis = new ObjectInputStream(new FileInputStream(
+				new File(masterBroadcastMap)));
+		mapReadFromMKMs = (HashMap<Integer, Object>) iis.readObject();
+		iis.close();
+		
+		} catch (ClassNotFoundException e) {
+			System.out.println("Error in reading the master broadcast map");
+			e.printStackTrace();
+		}
+		System.out.println("moving Values Files To Reducer Input Locations");
+		LoadDistributor.makeAllKeyFolderLocations(mapReadFromMKMs, job.getJobName());
+		LoadDistributor.moveValuesFilesToReducerInputLocations(mapReadFromMKMs, serverNumber, job);
+		// merge to single key remains perhaps
 		
 		outClient.writeBytes(
 				Constants.SHUFFLEFINISH + "#" + serverNumber + "\n");

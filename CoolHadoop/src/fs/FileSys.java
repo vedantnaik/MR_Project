@@ -168,15 +168,16 @@ public class FileSys {
 	 * @throws IOException 
 	 * @throws SocketException 
 	 * */
-	public static void moveMapperTempFilesToRemoteReducers(int localServerNumber, String mapKey, int foreignServerNumber, Job currentJob) throws SocketException, IOException, JSchException, SftpException{
+	// NOTE: Changing from mapkey from String to int
+	public static void moveMapperTempFilesToRemoteReducers(int localServerNumber, Integer mapKey, int foreignServerNumber, Job currentJob) throws SocketException, IOException, JSchException, SftpException{
 		
 		
 		// TODO: TEST CREATING FOLDERS ON REMOTE SERVERS
 		
 		// check if destination folder exists
-		String destFolderStr = Constants.ABSOLUTE_REDUCER_INPUT_FOLDER
+		String destFolderStr = Constants.ABS_REDUCER_INPUT_FOLDER
 										.replace("<JOBNAME>", currentJob.getJobName())
-										.replace("<KEY>", mapKey);
+										.replace("<KEY>", mapKey.toString());
 		
 		makeForeignFolderIfNotExist(destFolderStr, foreignServerNumber, currentJob);
 		
@@ -184,16 +185,17 @@ public class FileSys {
 		// copy file
 		String srcFilePath = Constants.RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE
 										.replace("<JOBNAME>", currentJob.getJobName())
-										.replace("<KEY>", mapKey)
+										.replace("<KEY>", mapKey.toString())
 										.replace("<SERVERNUMBER>", localServerNumber + "");
 		
-		String destFilePath = Constants.ABSOLUTE_REDUCER_INPUT_FILE
+		String destFilePath = Constants.ABS_REDUCER_INPUT_FILE
 										.replace("<JOBNAME>", currentJob.getJobName())
-										.replace("<KEY>", mapKey)
+										.replace("<KEY>", mapKey.toString())
 										.replace("<SERVERNUMBER>", localServerNumber + "");
 		
 		String destDns = currentJob.getConf().getServerIPaddrMap().get(new Integer(foreignServerNumber));
-		
+		System.out.println("move mapper files to remote location from " + srcFilePath
+			+ " to " + destFilePath);
 		scpCopy(srcFilePath, destFilePath, destDns);
 	}
 	
@@ -361,27 +363,27 @@ public class FileSys {
 	 * currentJob			: 		current Job object
 	 * 
 	 * */
-	
-	public static void moveMapperTempFilesToLocalReducer(String mapKey, int localServerNumber, Job currentJob){
+	// NOTE: Changing mapkey from string to int
+	public static void moveMapperTempFilesToLocalReducer(Integer mapKey, int localServerNumber, Job currentJob){
 	
 		String jobName = currentJob.getJobName();
 		
 		// make dir if does not exist
 		String destFolderStr = Constants.RELATIVE_REDUCER_INPUT_FOLDER
 								.replace("<JOBNAME>", jobName)
-								.replace("<KEY>", mapKey);
+								.replace("<KEY>", mapKey.toString());
 		
 		FileSys.makeLocalFolderIfNotExist(destFolderStr);
 		
 		// move between dirs
 		String srcFileStr = Constants.RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE
 										.replace("<JOBNAME>", jobName)
-										.replace("<KEY>", mapKey)
+										.replace("<KEY>", mapKey.toString())
 										.replace("<SERVERNUMBER>", localServerNumber+"");
 		
 		String destFileStr = Constants.RELATIVE_REDUCER_INPUT_FILE
 										.replace("<JOBNAME>", jobName)
-										.replace("<KEY>", mapKey)
+										.replace("<KEY>", mapKey.toString())
 										.replace("<SERVERNUMBER>", localServerNumber+"");
 		
 		java.nio.file.Path src = java.nio.file.Paths.get(srcFileStr);
@@ -561,7 +563,7 @@ public class FileSys {
 	    ChannelSftp channel = null;
 		channel = (ChannelSftp)session.openChannel("sftp");
 		channel.connect();
-		
+		System.out.println("making foreign folder " + destFolderStr + " on " + foreignServerNumber);
 		if(null == channel.stat(destFolderStr)){
 			channel.mkdir(destFolderStr);
 		}

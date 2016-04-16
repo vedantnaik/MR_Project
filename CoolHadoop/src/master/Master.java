@@ -327,6 +327,12 @@ public class Master {
 
 				String result = inFromServer.get(i).readLine();
 				System.out.println("received " + result);
+				if(result == null){
+					System.err.println("Did someone die? # " + i);
+					replies++;
+					replied[i] = true;
+					continue;
+				}
 
 				String[] returnedResult = result.split("#");
 
@@ -381,66 +387,11 @@ public class Master {
 	}
 
 	/**
-	 * main sort driver program
-	 * 
-	 * @param args
-	 * @throws Exception
+	 * Does a listing of files present in a bucket inside that particular object(inputFolder)
+	 * @param inputBucketName the name of the bucket
+	 * @param inputFolder the folder(object) inside the bucket to do listing inside
+	 * @return List<String> the summaries - like the ls command in UNIX
 	 */
-	/*
-	 * public void jobConfigurer(String args[]) throws Exception { if
-	 * (args.length < 4) { System.out
-	 * .println("Usage Client <inputBucketname> <outputBucketName>" +
-	 * "<inputFolder> <outputFolder> <LOCAL/nothing>");
-	 * System.out.println("Client some some some some LOCAL");
-	 * System.out.println("or");
-	 * System.out.println("Client some some some some"); System.exit(0); } //
-	 * needs to come from FileInputPaths String inputBucketName = args[0];
-	 * String outputBucketName = args[1]; String inputFolder = args[2]; String
-	 * outputFolder = args[3]; if (args.length > 4 &&
-	 * args[4].equals(Constants.LOCAL)) localServersFlag = true;
-	 * 
-	 * System.out.println("Input bucket: " + inputBucketName);
-	 * System.out.println("Output bucket: " + outputBucketName);
-	 * System.out.println("Input folder: " + inputFolder);
-	 * System.out.println("Output folder: " + outputFolder);
-	 * System.out.println("Running Local ? " + localServersFlag);
-	 * System.out.println("Reading s3 bucket"); // MRFS = new
-	 * FileSystem(inputBucketName, outputBucketName, inputFolder, //
-	 * outputFolder);
-	 * 
-	 * // TODO: later change System.out.println("reading config"); config = new
-	 * Configuration();
-	 * 
-	 * 
-	 * System.out.println("connecting to servers"); Master master = new
-	 * Master(); System.out.println("Connected to all Servers!");
-	 * System.out.println("Informing servers to begin!");
-	 * 
-	 * 
-	 * startJob(config, inputBucketName, outputBucketName, inputFolder,
-	 * outputFolder); Thread.sleep(1000000000); }
-	 */
-//
-//	public static String PATH = "C://Users//Dixit_Patel//Google Drive//Working on a dream//StartStudying//sem4//MapReduce//homeworks//hw8-Distributed Sorting//MR_Project//CoolHadoop//resources";
-//
-//	public static List<String> getStupidFiles() {
-//		List<String> files = new ArrayList<>();
-//		files.add("alice.txt.gz");
-//
-//		for (int i = 0; i < 3; i++)
-//			files.add("alice.txt.gz");
-//
-//		return files;
-//	}
-//
-//	public static Map<Integer, List<String>> mimicMyParts() {
-//		Map<Integer, List<String>> parts = new HashMap<>();
-//		for (int i = 0; i < 3; i++)
-//			parts.put(i, getStupidFiles());
-//
-//		return parts;
-//	}
-	
 	public List<String> getObjectSummariesForBucket(String inputBucketName, String inputFolder){
 		List<String> objectSummaries = new ArrayList<>();
 		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
@@ -457,10 +408,14 @@ public class Master {
 		return objectSummaries;
 	}
 	
-	
 	/**
 	 * Divide the files among servers such that every server handles roughly same amount of data
-	 * */
+	 * @param inputBucketName the input bucket read from the Job
+	 * @param inputFolder the folder inside the bucket
+	 * @param parts the number of servers/the number of parts required to be distributed
+	 * @return Map<Integer, List<String>> where integers are the slave server numbers and 
+	 * List<String> is the files which belong to a particular slave instance
+	 */
 	public Map<Integer, List<String>> getS3Parts(String inputBucketName, String inputFolder, int parts){
 		List<String> objectSummaries = getObjectSummariesForBucket(inputBucketName, inputFolder);
 		Collections.sort((objectSummaries), new Comparator<String>() {

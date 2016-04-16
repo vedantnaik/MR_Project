@@ -27,8 +27,8 @@ public class LoadDistributorTester {
 		Job currentJob = Job.getInstance(null);
 		currentJob.setJobName(jobName);
 		
-		HashMap<String, Integer> smap = new HashMap<String, Integer>();
-		smap.put(key, localServerNumber);
+		HashMap<Integer, Object> smap = new HashMap<Integer, Object>();
+		smap.put(key.hashCode(), localServerNumber);
 		
 		LoadDistributor.moveValuesFilesToReducerInputLocations(
 				smap, 

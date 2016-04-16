@@ -10,14 +10,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.io.FileUtils;
+
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 
 import coolmapreduce.Job;
 import fs.FileSys;
-
 import static java.nio.file.StandardCopyOption.*;
-
 import utils.Constants;
 
 public class LoadDistributor {
@@ -147,13 +147,13 @@ public class LoadDistributor {
 	 * at each server
 	 * after received broadcast map
 	 * */
-
-	public static void moveValuesFilesToReducerInputLocations(HashMap<String, Integer> broadcastMap, int localServerNumber, Job currentJob){
+	// NOTE: Changing mapkey from string to int, for both moveMapperTempFiles*
+	public static void moveValuesFilesToReducerInputLocations(HashMap<Integer, Object> broadcastMap, int localServerNumber, Job currentJob){
 		
-		String jobName = currentJob.getJobName();
+//		String jobName = currentJob.getJobName();
 		
-		for (String mapKey : broadcastMap.keySet()){
-			int serverToMoveTo = broadcastMap.get(mapKey);
+		for (Integer mapKey : broadcastMap.keySet()){
+			int serverToMoveTo = (int)broadcastMap.get(mapKey);
 			
 			if(serverToMoveTo == localServerNumber){
 				
@@ -199,7 +199,42 @@ public class LoadDistributor {
 	    }
 	    return length;
 	}
-	
+
+
+
+
+	public static void makeAllKeyFolderLocations(
+			Map<Integer, Object> broadcastMap, String jobname) {
+		try {
+
+		String reducerInputLocation = Constants.ABS_REDUCER_JUST_INPUT_FOLDER
+				.replace("<JOBNAME>", jobname);
+		
+		System.out.println("recursively deleting " + reducerInputLocation);
+		FileUtils.deleteDirectory(new File(reducerInputLocation));
+		
+		System.out.println("recreating it ");
+		File reducerInputLocationFolder = new File(reducerInputLocation);
+		reducerInputLocationFolder.mkdir();
+		
+		for (Object keys : broadcastMap.keySet()){
+			int hashcode = (int) keys;
+			
+			String reducerInputLocationKeyFolder = reducerInputLocation + hashcode
+					+ Constants.UNIX_FILE_SEPARATOR;
+			System.out.println("creating reducer input folder with key "
+					+ reducerInputLocationKeyFolder);
+			File keyFolder = new File(reducerInputLocationKeyFolder);
+			keyFolder.mkdir();
+		}
+		
+		
+		} catch (IOException e) {
+			System.out.println("Error in making folders for all keys");
+			e.printStackTrace();
+		}
+		
+	}	
 }
 
 

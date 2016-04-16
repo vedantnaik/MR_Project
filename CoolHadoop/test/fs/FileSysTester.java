@@ -65,7 +65,7 @@ public class FileSysTester {
 		vals.add(new Text("value8"+valServerId));
 
 		for(Text v : vals){
-			FileSys.writeMapperValueToKeyFolder(key, v, jobName, localServerNumber);
+//			FileSys.writeMapperValueToKeyFolder(key, v, jobName, localServerNumber);
 			
 		}
 		
