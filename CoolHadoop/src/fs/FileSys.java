@@ -20,6 +20,7 @@ import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -576,6 +577,28 @@ public class FileSys {
 		File destFolder = new File(relativeDirPath);
 		if(!destFolder.exists()){
 			destFolder.mkdirs();
+		}
+	}
+
+
+	/**
+	 * Effect : merge all valuesX.txt files from all servers from map phase to create final values.txt
+	 *  for all keys
+	 * 
+	 * Usage : during start of reduce phase to merge all valuesX.txt for all keys
+	 * */
+	public static void mergeValuesForAllKeysForJob(Job currentJob, int serverNumber, HashMap<Integer, Object> mapReadFromMKMs) {
+		try {
+			// for each key combine values
+			for (Integer keyFolder : mapReadFromMKMs.keySet()){
+				FileSys.combineReducerInputFiles(new Text(keyFolder+""), currentJob.getJobName(), serverNumber);
+			}
+		} catch (FileNotFoundException e) {
+			System.err.println("Could not find the master MKM file while combining input valuesX.txt");
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.err.println("Error while reading/writing to files while combining input valuesX.txt");
+			e.printStackTrace();
 		}
 	}
 }

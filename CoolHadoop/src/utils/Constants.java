@@ -45,7 +45,8 @@ public class Constants {
 	public static final String RELATIVE_MAPPER_KEY_MAPS_FOLDER = "./output/<JOBNAME>/MKMs/";
 	
 	public static final String MKM_FILE_NAME = "mkmonserver<SERVERNUMBER>";
-	public static final String BROADCAST_MAP = "mkmbroadcastmaster";
+	public static final String BROADCAST_MKM_MAP = "mkmbroadcastmaster";
+	public static final String BROADCAST_KEY_SERVER_MAP = "broadcastkeyservermaster";
 	
 	public static final String ABSOLUTE_OUTPUT_LOCATION = PROJECT_HOME + "/output/";
 	public static final String ABSOLUTE_JOB_FOLDER = ABSOLUTE_OUTPUT_LOCATION + "/<JOBNAME>/";

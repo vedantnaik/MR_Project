@@ -240,32 +240,44 @@ public class Master {
 		// set call / union 
 		// 
 		
-		Map<Integer, Object> allMKMs = readAllMKMs(jobName);
+		// {haskeys : originalkeys}
+		Map<Integer, Object> allMasterMKMs = readAllMKMs(jobName);		
 		
-		Map<Integer, Object>  mkmBroadcastMasterMap = LoadDistributor.getLoadDistribBroadcast(allMKMs, 3);
+		// {hashkeys : servernumbers}
+		Map<Integer, Object>  broadcastKeyServerMap = LoadDistributor.getLoadDistribBroadcast(allMasterMKMs, totalServers);	
+		
+		String masterBroadcastKeyServerMapPath = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER_LOCAL
+				.replace("<JOBNAME>", jobName) + Constants.UNIX_FILE_SEPARATOR + Constants.BROADCAST_KEY_SERVER_MAP;
 				
-		String masterBroadcastMapPath = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER_LOCAL
-				.replace("<JOBNAME>", jobName) + Constants.UNIX_FILE_SEPARATOR + Constants.BROADCAST_MAP;
+		String masterBroadcastMKMPath = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER_LOCAL
+				.replace("<JOBNAME>", jobName) + Constants.UNIX_FILE_SEPARATOR + Constants.BROADCAST_MKM_MAP;
 		
-		File fileDelete = new File(masterBroadcastMapPath);
+		File fileDelete = new File(masterBroadcastMKMPath);
+		File fileDeleteKS = new File(masterBroadcastKeyServerMapPath);
 		fileDelete.delete();
+		fileDeleteKS.delete();
 		
-		FileSys.writeObjectToFile(mkmBroadcastMasterMap, masterBroadcastMapPath);
+		FileSys.writeObjectToFile(allMasterMKMs, masterBroadcastMKMPath);
+		FileSys.writeObjectToFile(broadcastKeyServerMap, masterBroadcastKeyServerMapPath);
 		
-		String fdest = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_MAP;
-		String fsrc = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_MAP;
+		String fdest = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_MKM_MAP;
+		String fsrc = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_MKM_MAP;
+		
+		String fdestKS = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_KEY_SERVER_MAP;
+		String fsrcKS = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_KEY_SERVER_MAP;
+		
 		
 		for (int i = 0; i < totalServers; i++) {
 			System.out.println("Moving MKMs from " + fsrc + "  to " + servers.get(i) + " @ "
 					+ fdest);
-			FileSys.scpCopy(fsrc, fdest, servers.get(i));			
+			FileSys.scpCopy(fsrc, fdest, servers.get(i));
+			FileSys.scpCopy(fsrcKS, fdestKS, servers.get(i));
 		}		
 		
 	}
 	
 	public Map<Integer, Object> readAllMKMs(String jobName) throws FileNotFoundException, IOException, ClassNotFoundException{
 		
-		// TODO  : change
 		String mapperOutputFolderStr = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER
 												.replace("<JOBNAME>", jobName);
 		System.out.println("mapfolder to read MKM " + mapperOutputFolderStr);
