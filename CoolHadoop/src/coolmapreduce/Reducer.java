@@ -4,15 +4,15 @@ import java.io.IOException;
 
 public abstract class Reducer<KI, VI, KO, VO> {
 	
-	protected void setup(Context context){
+	protected void setup(Context context) throws Exception{
 		//noop?
 	}
 	
 	// TODO: set generics using input/output classes, and context
-	public abstract void reduce(KI key, Iterable<VI> value, Context context) 
+	protected abstract void reduce(KI key, Iterable<VI> value, Context context) 
 			throws IOException, InterruptedException;
 	
-	protected void cleanup(Context context){
+	protected void cleanup(Context context) throws Exception{
 		//noop?
 	}
 	

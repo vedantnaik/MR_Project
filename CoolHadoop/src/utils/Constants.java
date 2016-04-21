@@ -66,7 +66,7 @@ public class Constants {
 	
 	public static final String RELATIVE_COMBINED_REDUCER_INPUT_FILE = "./input/<JOBNAME>/reducer/<KEY>/values.txt";
 	
-	public static final String RELATIVE_REDUCER_OUTPUT_FILE = "./output/<JOBNAME>/reducer/part-0000<SERVERNUMBER>";
+	public static final String RELATIVE_REDUCER_OUTPUT_FILE = "./output/<JOBNAME>/reducer/part-XXXXX";
 	public static final String RELATIVE_REDUCER_OUTPUT_FOLDER = "./output/<JOBNAME>/reducer";
 	
 	// Network communication

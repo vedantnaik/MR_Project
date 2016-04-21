@@ -162,7 +162,7 @@ public class Master {
 			throws IOException {
 		// TODO: Should return boolean
 
-
+		FileSys.makeFolderStructureOnMaster(job.getJobName());
 		// TODO: remove mimicMyParts
 		Map<Integer, List<String>> partsMap = getS3Parts(inputBucketName, inputFolder, totalServers);
 

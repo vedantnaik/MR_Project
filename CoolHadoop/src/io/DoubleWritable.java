@@ -1,7 +1,10 @@
 package io;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.io.Serializable;
 
-public class DoubleWritable implements Serializable  {
+public class DoubleWritable implements Serializable, Writable  {
 
 	/**
 	 * 
@@ -29,5 +32,17 @@ public class DoubleWritable implements Serializable  {
 	public String toString() {
 		// TODO Auto-generated method stub
 		return value+"";
+	}
+
+	@Override
+	public void readFields(DataInput arg0) throws IOException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void write(DataOutput arg0) throws IOException {
+		// TODO Auto-generated method stub
+		
 	}
 }

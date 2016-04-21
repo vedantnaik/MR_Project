@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
+import org.apache.commons.io.FileUtils;
+
 import utils.Constants;
 
 import com.amazonaws.auth.AWSCredentials;
@@ -198,7 +200,12 @@ public class FileSys {
 		String destDns = currentJob.getConf().getServerIPaddrMap().get(new Integer(foreignServerNumber));
 		System.out.println("move mapper files to remote location from " + srcFilePath
 			+ " to " + destFilePath);
-		scpCopy(srcFilePath, destFilePath, destDns);
+		
+		if (new File(srcFilePath).exists()) {
+			scpCopy(srcFilePath, destFilePath, destDns);
+		}else{
+			// noop
+		}
 	}
 	
 	
@@ -304,7 +311,7 @@ public class FileSys {
 	 * @throws IOException 
 	 * 
 	 * */
-	public static Iterator<Object> readMapperOutputForKey(Text key, String jobName, int localServerNumber) throws IOException{
+	public static Iterable<Object> readMapperOutputForKey(Text key, String jobName, int localServerNumber) throws IOException{
 		
 		String fileToRead = Constants.RELATIVE_COMBINED_REDUCER_INPUT_FILE
 									.replace("<JOBNAME>", jobName)
@@ -362,7 +369,7 @@ public class FileSys {
 	
 	
 	/**
-	 * Locally move mapper output values file to reducer input folder
+	 * Locally move mapper output values file to reducer input folder iff exists
  	 * mapKey				:		key for which files are to be moved from this EC2 instance
 	 * localServerNumber	:		server number within which the values file needs to be moved
 	 * currentJob			: 		current Job object
@@ -392,15 +399,23 @@ public class FileSys {
 										.replace("<SERVERNUMBER>", localServerNumber+"");
 		
 		java.nio.file.Path src = java.nio.file.Paths.get(srcFileStr);
-		java.nio.file.Path dest = java.nio.file.Paths.get(destFileStr);
 		
-		
-		try {
-			java.nio.file.Files.move(src, dest, REPLACE_EXISTING);
-		} catch (IOException e) {
-			System.err.println("UNABLE TO SHUFFLE FILE LOCALLY FOR KEY " + mapKey + " in ServerNumber " + localServerNumber);
-			e.printStackTrace();
-		}
+
+		if(new File(srcFileStr).exists()){
+			
+			java.nio.file.Path dest = java.nio.file.Paths.get(destFileStr);
+			
+			
+			try {
+				java.nio.file.Files.move(src, dest, REPLACE_EXISTING);
+			} catch (IOException e) {
+				System.err.println("UNABLE TO SHUFFLE FILE LOCALLY FOR KEY " + mapKey + " in ServerNumber " + localServerNumber);
+				e.printStackTrace();
+			}
+
+		}else{
+			// noop
+		}		
 		
 	}
 	
@@ -415,10 +430,10 @@ public class FileSys {
 	public static void writeReducerOutputKeyValue(Text key, Object value, String currentJobName, int currentServerNumber){
 		
 		String fileToWriteInStr = Constants.RELATIVE_REDUCER_OUTPUT_FILE
-										.replace("<JOBNAME>", currentJobName)
-										.replace("<SERVERNUMBER>", currentServerNumber+"");
+										.replace("<JOBNAME>", currentJobName);
+//										.replace("<SERVERNUMBER>", currentServerNumber+"");
 		
-		String tabSeparatedLineToWrite = key.toString() + "\t" + value.toString();
+		String tabSeparatedLineToWrite = key.toString() + "\t" + value.toString() + "\n";
 		
 		// write the value
 		try {
@@ -626,6 +641,26 @@ public class FileSys {
 			System.err.println("Error while reading/writing to files while combining input valuesX.txt");
 			e.printStackTrace();
 		}
+	}
+	
+	public static void makeFolderStructureOnMaster(String jobName) throws IOException{
+			
+		//delete jobname folder under output
+		String outputJobFolderName = Constants.ABSOLUTE_JOB_FOLDER.replace("<JOBNAME>", jobName);
+		System.out.println("recursively deleting " + outputJobFolderName);
+		FileUtils.deleteDirectory(new File(outputJobFolderName));
+		
+		// make again
+		System.out.println("create output job Folder " + outputJobFolderName);
+		File outputJobFolder = new File(outputJobFolderName);
+		outputJobFolder.mkdir();
+		
+		// make MasterMKMs folder
+		String masterMKMfolder = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", jobName);
+		System.out.println("create masterMKMs Folder " + masterMKMfolder);
+		File masterMKMfolderObj = new File(masterMKMfolder);
+		masterMKMfolderObj.mkdir();
+		
 	}
 }
 

@@ -90,7 +90,7 @@ public class Context {
 		strKeyHashCode = strKeyHashCode.replace('-', 'M');
 
 		this.mapperKeysMap.put(strKeyHashCode, keyToWrite.toString());
-		System.out.println("putting " + mapperKeysMap);
+//		System.out.println("putting " + mapperKeysMap);
 		FileSys.writeMapperValueToKeyFolder(strKeyHashCode, valueToWrite, this.currentJob.getJobName(), this.localServerNumber);
 	}
 

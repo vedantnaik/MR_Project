@@ -213,6 +213,7 @@ public class MapperHandler {
 	 * 			
 			├── output
 			│   └── mywordcount
+			|       |-- MasterMKMs  
 			│       ├── mapper
 			│       └── MKMs
 						|_ mkmonserver<servernumber>	
@@ -243,6 +244,13 @@ public class MapperHandler {
 			System.out.println("create mapper folder " + mapperFolderName);
 			File mapperFolder = new File(mapperFolderName);
 			mapperFolder.mkdir();
+			
+			// create MasterMKMs folder
+			String masterMKMFolder = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", currentJob.getJobName());
+			System.out.println("create mapper folder " + masterMKMFolder);
+			File masterMKMFObj = new File(masterMKMFolder);
+			masterMKMFObj.mkdir();
+			
 			
 			// create MKM folder
 			
@@ -281,8 +289,9 @@ public class MapperHandler {
 
 		} catch (Exception e) {
 			System.out.println("exception in init of setup");
-			e.printStackTrace();
-			throw e;
+//			e.printStackTrace();
+//			throw e;
+			System.out.println("No setup found for Mapper");
 		}
 
 	}
@@ -302,8 +311,9 @@ public class MapperHandler {
 		} catch (Exception e) {
 
 			System.out.println("exception in init of cleaup");
-			e.printStackTrace();
-			throw e;
+//			e.printStackTrace();
+//			throw e;
+			System.out.println("No cleanup found for Mapper");
 		}
 	}
 

@@ -1,8 +1,11 @@
 package io;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.io.Serializable;
 
 
-public class IntWritable implements Serializable  {
+public class IntWritable implements Writable  {
 
 	/**
 	 * 
@@ -39,5 +42,17 @@ public class IntWritable implements Serializable  {
 	@Override
 	public int hashCode() {
 		return value;
+	}
+
+	@Override
+	public void readFields(DataInput arg0) throws IOException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void write(DataOutput arg0) throws IOException {
+		// TODO Auto-generated method stub
+		
 	}
 }
