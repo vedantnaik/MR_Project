@@ -67,6 +67,8 @@ public class Server implements Runnable {
 	private static boolean localServersFlag = false; 
 	private static boolean receivingMapFiles = false;
 
+	//
+	private Map<String, Object> masterKeyServerMap;
 	
 	/**
 	 * The Server which accepts a connection and starts a new
@@ -372,14 +374,14 @@ public class Server implements Runnable {
 		// TODO: Call functions
 		// read the master MKM and send the files to the reducer 
 		// for corresponding server#
-		HashMap<Integer, Object> masterKeyServerMap = null;
+		masterKeyServerMap = null;
 		try {
 		String masterBroadcastKeyServerMap = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER
 				.replace("<JOBNAME>", job.getJobName()) + Constants.BROADCAST_KEY_SERVER_MAP;
 		
 		ObjectInputStream iis = new ObjectInputStream(new FileInputStream(
 				new File(masterBroadcastKeyServerMap)));
-		masterKeyServerMap = (HashMap<Integer, Object>) iis.readObject();
+		masterKeyServerMap = (HashMap<String, Object>) iis.readObject();
 		iis.close();
 		
 		} catch (ClassNotFoundException e) {
@@ -402,7 +404,7 @@ public class Server implements Runnable {
 	private void start_reduce_phase() throws IOException {
 		// TODO: Call reduceHandler
 		
-		HashMap<Integer, Object> masterMKMs = null;
+		HashMap<String, Object> masterMKMs = null;
 		try {
 			// read mkm from file
 			String masterBroadcastMKM = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER
@@ -410,7 +412,7 @@ public class Server implements Runnable {
 			
 			ObjectInputStream iis = new ObjectInputStream(new FileInputStream(
 					new File(masterBroadcastMKM)));
-			masterMKMs = (HashMap<Integer, Object>) iis.readObject();
+			masterMKMs = (HashMap<String, Object>) iis.readObject();
 			iis.close();
 		} catch (ClassNotFoundException e1) {
 			System.err.println("Could not cast MKM to an object of hashmap");
@@ -421,13 +423,13 @@ public class Server implements Runnable {
 		
 		
 		// 1. merge the values from different servers for each key, to values.txt
-		FileSys.mergeValuesForAllKeysForJob(job, serverNumber, masterMKMs);
+		FileSys.mergeValuesForAllKeysForJob(job, serverNumber, masterMKMs, masterKeyServerMap);
 		
 		// 2. create reducer handler
 		//  - b. for each key, read values.txt using the iterator and make reduce call.
 		try {
 			reducerhandlerInstance = new ReducerHandler(job, masterMKMs, serverNumber);
-			reducerhandlerInstance.runReducerHandler();
+			reducerhandlerInstance.runReducerHandler(masterKeyServerMap);
 		} catch (Exception e) {
 			System.err.println("Error in run reducer handler from server "+serverNumber);
 			e.printStackTrace();

@@ -2,7 +2,6 @@ package fs;
 
 import fs.iter.FileReaderIterator;
 import io.Text;
-
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import java.io.BufferedReader;
@@ -23,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import utils.Constants;
@@ -45,6 +45,7 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
 import coolmapreduce.Job;
+import coolmapreduce.MapperHandler;
 
 public class FileSys {
 	
@@ -170,7 +171,7 @@ public class FileSys {
 	 * @throws SocketException 
 	 * */
 	// NOTE: Changing from mapkey from String to int
-	public static void moveMapperTempFilesToRemoteReducers(int localServerNumber, Integer mapKey, int foreignServerNumber, Job currentJob) throws SocketException, IOException, JSchException, SftpException{
+	public static void moveMapperTempFilesToRemoteReducers(int localServerNumber, String mapKey, int foreignServerNumber, Job currentJob) throws SocketException, IOException, JSchException, SftpException{
 		
 		
 		// TODO: TEST CREATING FOLDERS ON REMOTE SERVERS
@@ -252,7 +253,7 @@ public class FileSys {
 	 *  
 	 * ./output/JOBNAME/mapper/KEY/valuesSERVERNUMBER.txt
 	 * */
-	public static void writeMapperValueToKeyFolder(Integer keyHashCode, Object value, String jobName, int localServerNumber){
+	public static void writeMapperValueToKeyFolder(String keyHashCode, Object value, String jobName, int localServerNumber){
 		
 		String fileNameToWriteIn = Constants.RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE
 									.replace("<JOBNAME>", jobName)
@@ -331,21 +332,22 @@ public class FileSys {
 	 * */
 	
 	public static void combineReducerInputFiles(Text key, String jobName, int localServerNumber) throws IOException{
-		
 		File reducerInputFolder = new File(Constants.RELATIVE_REDUCER_INPUT_FOLDER
 												.replace("<JOBNAME>", jobName)
 												.replace("<KEY>", key.toString()));
 		
+		System.out.println("reducerInput Folder " + reducerInputFolder);
 		
 		
 		File finalValuesFile = new File(Constants.RELATIVE_COMBINED_REDUCER_INPUT_FILE
 												.replace("<JOBNAME>", jobName)
 												.replace("<KEY>", key.toString()));
 		
+		
 		ObjectOutputStream finalOOS = null;
 		for (File valuesFile : reducerInputFolder.listFiles()){
 			FileReaderIterator valuesIter = new FileReaderIterator(valuesFile); 
-			
+			System.out.println("Merging " + valuesFile);
 			for(Object valueObject : valuesIter){
 				finalOOS = getOOS(finalValuesFile);
 				finalOOS.writeObject(valueObject);
@@ -353,7 +355,9 @@ public class FileSys {
 			
 			valuesFile.delete();
 		}
-		finalOOS.close();
+		if(null != finalOOS){
+			finalOOS.close();
+		}
 	}
 	
 	
@@ -365,7 +369,7 @@ public class FileSys {
 	 * 
 	 * */
 	// NOTE: Changing mapkey from string to int
-	public static void moveMapperTempFilesToLocalReducer(Integer mapKey, int localServerNumber, Job currentJob){
+	public static void moveMapperTempFilesToLocalReducer(String mapKey, int localServerNumber, Job currentJob){
 	
 		String jobName = currentJob.getJobName();
 		
@@ -408,15 +412,32 @@ public class FileSys {
 	 * 
 	 * USAGE: Context.write() when in CTX_RED_PHASE
 	 * */
-	public static void writeReducerOutputKeyValue(Text key, Object value, String currentJobName){
+	public static void writeReducerOutputKeyValue(Text key, Object value, String currentJobName, int currentServerNumber){
 		
 		String fileToWriteInStr = Constants.RELATIVE_REDUCER_OUTPUT_FILE
-										.replace("<JOBNAME>", currentJobName);
+										.replace("<JOBNAME>", currentJobName)
+										.replace("<SERVERNUMBER>", currentServerNumber+"");
 		
 		String tabSeparatedLineToWrite = key.toString() + "\t" + value.toString();
 		
 		// write the value
 		try {
+			
+			// create folder
+			
+			//make output folder
+			String outputFolderName = Constants.RELATIVE_REDUCER_OUTPUT_FOLDER.replace("<JOBNAME>", currentJobName);
+			System.out.println("create output job Folder " + outputFolderName);
+			File outputFolderFileObj = new File(outputFolderName);
+			outputFolderFileObj.mkdir();
+
+			
+			System.out.println("create file on server " + fileToWriteInStr);
+			// create empty file for part-0000X
+			
+			File partX = new File(fileToWriteInStr);
+			partX.createNewFile();
+			
 			java.nio.file.Files.write(
 					java.nio.file.Paths.get(fileToWriteInStr), 
 					tabSeparatedLineToWrite.getBytes(), 
@@ -587,11 +608,16 @@ public class FileSys {
 	 * 
 	 * Usage : during start of reduce phase to merge all valuesX.txt for all keys
 	 * */
-	public static void mergeValuesForAllKeysForJob(Job currentJob, int serverNumber, HashMap<Integer, Object> mapReadFromMKMs) {
+	public static void mergeValuesForAllKeysForJob(Job currentJob, int serverNumber, HashMap<String, Object> mapReadFromMKMs,
+			Map<String, Object>  masterKeyServerMap) {
 		try {
 			// for each key combine values
-			for (Integer keyFolder : mapReadFromMKMs.keySet()){
-				FileSys.combineReducerInputFiles(new Text(keyFolder+""), currentJob.getJobName(), serverNumber);
+			for (String keyFolder : mapReadFromMKMs.keySet()){
+				
+				if((int) masterKeyServerMap.get(keyFolder) == serverNumber){
+					System.out.println("combiner for " + keyFolder);
+					FileSys.combineReducerInputFiles(new Text(keyFolder+""), currentJob.getJobName(), serverNumber);
+				}
 			}
 		} catch (FileNotFoundException e) {
 			System.err.println("Could not find the master MKM file while combining input valuesX.txt");

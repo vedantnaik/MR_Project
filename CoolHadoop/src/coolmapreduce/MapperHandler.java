@@ -324,6 +324,8 @@ public class MapperHandler {
 
 		System.out.println("Write mapper key map for " + currentJob.getJobName() + " on server " + localServerNumber);
 		
+		
+		System.out.println("writing this server's mkm to file " + contextVariable.getMapperKeysMap());
 		FileSys.writeObjectToFile(contextVariable.getMapperKeysMap(), fileToWriteStr);
 	} 
 	

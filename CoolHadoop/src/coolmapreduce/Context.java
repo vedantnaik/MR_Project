@@ -48,7 +48,7 @@ public class Context {
 								// if Constants.CTX_RED_PHASE : write to final output
 	private int localServerNumber;
 	
-	private HashMap<Integer, Object> mapperKeysMap;
+	private HashMap<String, Object> mapperKeysMap;
 	
 	
 	public Context(Job _currentJob, String _writePhase, int _localServerNumber){
@@ -57,7 +57,7 @@ public class Context {
 		this.localServerNumber = _localServerNumber;
 		
 		if(_writePhase.equalsIgnoreCase(Constants.CTX_MAP_PHASE)){
-			this.mapperKeysMap = new HashMap<Integer, Object>(); 
+			this.mapperKeysMap = new HashMap<String, Object>(); 
 		}
 	}
 	
@@ -86,9 +86,12 @@ public class Context {
 	 * */
 	private void writeToMapperOutput(Text keyToWrite, Object valueToWrite) {
 		
-		this.mapperKeysMap.put(keyToWrite.hashCode(), keyToWrite);
-		
-		FileSys.writeMapperValueToKeyFolder(keyToWrite.hashCode(), valueToWrite, this.currentJob.getJobName(), this.localServerNumber);
+		String strKeyHashCode = keyToWrite.hashCode()+"";
+		strKeyHashCode = strKeyHashCode.replace('-', 'M');
+
+		this.mapperKeysMap.put(strKeyHashCode, keyToWrite.toString());
+		System.out.println("putting " + mapperKeysMap);
+		FileSys.writeMapperValueToKeyFolder(strKeyHashCode, valueToWrite, this.currentJob.getJobName(), this.localServerNumber);
 	}
 
 
@@ -105,16 +108,16 @@ public class Context {
 	 ********************************************************************** 
 	 * */
 	private void writeToReducerOutput(Text keyToWrite, Object valueToWrite) {
-		FileSys.writeReducerOutputKeyValue(keyToWrite, valueToWrite, this.currentJob.getJobName());
+		FileSys.writeReducerOutputKeyValue(keyToWrite, valueToWrite, this.currentJob.getJobName(), localServerNumber);
 	}
 
 	// GETTER SETTER
 
-	public HashMap<Integer, Object> getMapperKeysMap() {
+	public HashMap<String, Object> getMapperKeysMap() {
 		return mapperKeysMap;
 	}
 
-	public void setMapperKeysMap(HashMap<Integer, Object> mapperKeysMap) {
+	public void setMapperKeysMap(HashMap<String, Object> mapperKeysMap) {
 		this.mapperKeysMap = mapperKeysMap;
 	}
 	

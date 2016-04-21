@@ -1,15 +1,14 @@
 package coolmapreduce;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import fs.FileSys;
-import utils.Constants;
 import io.IntWritable;
-import io.LongWritable;
 import io.Text;
+
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
+import utils.Constants;
 
 public class ReducerHandler {
 
@@ -37,7 +36,7 @@ public class ReducerHandler {
 	String phase = "";
 
 	// Main broadcasted MKM which gives us info about original keys and their hashed values used for folder names
-	HashMap<Integer, Object> broadcastedMKM;
+	HashMap<String, Object> broadcastedMKM;
 	
 	// Class variable for Keeping track of Mapper class
 	Class<?> classVariable = null;
@@ -68,7 +67,7 @@ public class ReducerHandler {
 		currentJob = null;
 	}
 	
-	public ReducerHandler(Job _currentJob, HashMap<Integer, Object> _broadcastedMKM, int _localServerNumber){
+	public ReducerHandler(Job _currentJob, HashMap<String, Object> _broadcastedMKM, int _localServerNumber){
 		localServerNumber = _localServerNumber;
 		currentJob = _currentJob;
 		contextVariable = new Context(currentJob, Constants.CTX_RED_PHASE, localServerNumber);
@@ -76,7 +75,7 @@ public class ReducerHandler {
 	}
 	
 	
-	public void runReducerHandler() throws Exception {
+	public void runReducerHandler(Map<String, Object> masterKeyServerMap) throws Exception {
 
 		System.out.println("\tStarting Reducer for "
 				+ currentJob.getReducerClass().toString());
@@ -93,10 +92,16 @@ public class ReducerHandler {
 		
 		int progressCounter = 0;
 		
-		for (Integer hashedKeyFolderName : broadcastedMKM.keySet()){
-			Text originalKey = (Text) broadcastedMKM.get(hashedKeyFolderName);
-			reducerHandlerRun(originalKey);
-			phase = Constants.RUNNING + " " + (progressCounter * 100.0) / broadcastedMKM.size();
+		for (String hashedKeyFolderName : broadcastedMKM.keySet()) {
+			if ((int) masterKeyServerMap.get(hashedKeyFolderName) == localServerNumber) {
+				System.out.println("processing key " + hashedKeyFolderName);
+
+				String originalKey = (String) broadcastedMKM
+						.get(hashedKeyFolderName);
+				reducerHandlerForKey(new Text(originalKey), hashedKeyFolderName);
+				phase = Constants.RUNNING + " " + (progressCounter * 100.0)
+						/ broadcastedMKM.size();
+			}
 		}
 		
 		phase = Constants.CLEANUP;
@@ -161,15 +166,16 @@ public class ReducerHandler {
 		
 	}
 	
-	public void reducerHandlerRun(Text key) throws Exception {
+	public void reducerHandlerForKey(Text key, String hashedKeyFolderName) throws Exception {
 		System.out.println("Invoking reduce function");
 		Method reduce;
 		try {
 			reduce = classVariable.getMethod("reduce", keyInClass, Iterable.class,
 					contextClass);
 
-			System.out.println("Reduce call for key " + key);
-			Iterable<IntWritable> iter = (Iterable<IntWritable>) FileSys.readMapperOutputForKey(key, currentJob.getJobName(), localServerNumber);
+			System.out.println("Reduce call for key " + key + " foldername " + hashedKeyFolderName);
+			Iterable<IntWritable> iter = (Iterable<IntWritable>) 
+					FileSys.readMapperOutputForKey(new Text(hashedKeyFolderName+""), currentJob.getJobName(), localServerNumber);
 			
 			// give context variable
 			reduce.invoke(objectInstance, key, iter, contextVariable);
@@ -178,7 +184,7 @@ public class ReducerHandler {
 			System.out.println("Exception in running map function");
 			e.printStackTrace();
 			throw e;
-		}
+		}	
 	}
 
 	private void reducerHandlerCleanup() throws Exception {

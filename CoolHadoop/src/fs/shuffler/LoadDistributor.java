@@ -118,20 +118,20 @@ public class LoadDistributor {
 	 * 
 	 * */
 	
-	public static Map<Integer, Object> getLoadDistribBroadcast(Map<Integer, Object> serverMapperOutputKeySizerMap, int parts){
+	public static Map<String, Object> getLoadDistribBroadcast(Map<String, Object> serverMapperOutputKeySizerMap, int parts){
 		
-		Map<Integer, Object> broadcastMap = new HashMap<Integer, Object>();
+		Map<String, Object> broadcastMap = new HashMap<String, Object>();
 		
 //		System.out.println("entry set " + serverMapperOutputKeySizerMap.entrySet());
 		
 		// Sort map based on the key's sizes
-		ArrayList<Entry<Integer, Object>> sortedMapperKeySizeList = new ArrayList<Entry<Integer, Object>>(serverMapperOutputKeySizerMap.entrySet());
+		ArrayList<Entry<String, Object>> sortedMapperKeySizeList = new ArrayList<Entry<String, Object>>(serverMapperOutputKeySizerMap.entrySet());
 				
 		// assign a server to each key (used to tell servers which keys they will handle)
 		int spinner = 0;
 //		System.out.println("broad cast " + sortedMapperKeySizeList);
-		for(Entry<Integer, Object> e : sortedMapperKeySizeList){
-			Integer mapperKey = e.getKey();
+		for(Entry<String, Object> e : sortedMapperKeySizeList){
+			String mapperKey = e.getKey();
 			if(spinner == parts) {spinner = 0;}
 			broadcastMap.put(mapperKey, spinner);
 			spinner++;
@@ -148,11 +148,11 @@ public class LoadDistributor {
 	 * after received broadcast map
 	 * */
 	// NOTE: Changing mapkey from string to int, for both moveMapperTempFiles*
-	public static void moveValuesFilesToReducerInputLocations(HashMap<Integer, Object> broadcastMap, int localServerNumber, Job currentJob){
+	public static void moveValuesFilesToReducerInputLocations(Map<String, Object> broadcastMap, int localServerNumber, Job currentJob){
 		
 //		String jobName = currentJob.getJobName();
 		
-		for (Integer mapKey : broadcastMap.keySet()){
+		for (String mapKey : broadcastMap.keySet()){
 			int serverToMoveTo = (int)broadcastMap.get(mapKey);
 			
 			if(serverToMoveTo == localServerNumber){
@@ -204,7 +204,7 @@ public class LoadDistributor {
 
 
 	public static void makeAllKeyFolderLocations(
-			Map<Integer, Object> broadcastMap, String jobname) {
+			Map<String, Object> broadcastMap, String jobname) {
 		try {
 
 		String reducerInputLocation = Constants.ABS_REDUCER_JUST_INPUT_FOLDER
@@ -217,8 +217,8 @@ public class LoadDistributor {
 		File reducerInputLocationFolder = new File(reducerInputLocation);
 		reducerInputLocationFolder.mkdir();
 		
-		for (Object keys : broadcastMap.keySet()){
-			int hashcode = (int) keys;
+		for (String keys : broadcastMap.keySet()){
+			String hashcode = (String) keys;
 			
 			String reducerInputLocationKeyFolder = reducerInputLocation + hashcode
 					+ Constants.UNIX_FILE_SEPARATOR;

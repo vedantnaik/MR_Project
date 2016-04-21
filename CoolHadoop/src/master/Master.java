@@ -241,10 +241,10 @@ public class Master {
 		// 
 		
 		// {haskeys : originalkeys}
-		Map<Integer, Object> allMasterMKMs = readAllMKMs(jobName);		
+		Map<String, Object> allMasterMKMs = readAllMKMs(jobName);		
 		
 		// {hashkeys : servernumbers}
-		Map<Integer, Object>  broadcastKeyServerMap = LoadDistributor.getLoadDistribBroadcast(allMasterMKMs, totalServers);	
+		Map<String, Object>  broadcastKeyServerMap = LoadDistributor.getLoadDistribBroadcast(allMasterMKMs, totalServers);	
 		
 		String masterBroadcastKeyServerMapPath = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER_LOCAL
 				.replace("<JOBNAME>", jobName) + Constants.UNIX_FILE_SEPARATOR + Constants.BROADCAST_KEY_SERVER_MAP;
@@ -266,6 +266,9 @@ public class Master {
 		String fdestKS = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_KEY_SERVER_MAP;
 		String fsrcKS = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_KEY_SERVER_MAP;
 		
+		System.out.println("\tMKM " + allMasterMKMs);
+		System.out.println("\tKeyServer Map " + broadcastKeyServerMap);
+		
 		
 		for (int i = 0; i < totalServers; i++) {
 			System.out.println("Moving MKMs from " + fsrc + "  to " + servers.get(i) + " @ "
@@ -276,22 +279,22 @@ public class Master {
 		
 	}
 	
-	public Map<Integer, Object> readAllMKMs(String jobName) throws FileNotFoundException, IOException, ClassNotFoundException{
+	public Map<String, Object> readAllMKMs(String jobName) throws FileNotFoundException, IOException, ClassNotFoundException{
 		
 		String mapperOutputFolderStr = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER
 												.replace("<JOBNAME>", jobName);
 		System.out.println("mapfolder to read MKM " + mapperOutputFolderStr);
 		File mapperOutputFolder = new File(mapperOutputFolderStr);
 		
-		Map<Integer, Object> mapReadFromMKMs = new HashMap<>();
+		Map<String, Object> mapReadFromMKMs = new HashMap<>();
 		
-		Map<Integer, Object> allMKMs = new HashMap<>();
+		Map<String, Object> allMKMs = new HashMap<>();
 		
 		for(String f : mapperOutputFolder.list()){
 		
 			ObjectInputStream iis = new ObjectInputStream(new FileInputStream(
 					new File(mapperOutputFolder+"/"+f)));
-			mapReadFromMKMs = (HashMap<Integer, Object>) iis.readObject();
+			mapReadFromMKMs = (HashMap<String, Object>) iis.readObject();
 			iis.close();
 			System.out.println("Adding size of " + mapReadFromMKMs.size());
 			allMKMs.putAll(mapReadFromMKMs);
