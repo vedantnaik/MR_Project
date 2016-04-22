@@ -181,6 +181,8 @@ public class Master {
 						Constants.MAPFILES + "#" + Constants.START + "\n");
 				System.out.println("Map Parts to " + servers.get(i) + " => "
 						+ partsMap.get(i));
+				
+				// TODO: Null check
 				for (String fileNameIter : partsMap.get(i)) {
 					out.get(i).writeBytes(fileNameIter + "\n");
 					Thread.sleep(1000);
@@ -260,10 +262,10 @@ public class Master {
 		FileSys.writeObjectToFile(allMasterMKMs, masterBroadcastMKMPath);
 		FileSys.writeObjectToFile(broadcastKeyServerMap, masterBroadcastKeyServerMapPath);
 		
-		String fdest = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_MKM_MAP;
+		String fdest = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_MKM_MAP;
 		String fsrc = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_MKM_MAP;
 		
-		String fdestKS = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_KEY_SERVER_MAP;
+		String fdestKS = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_KEY_SERVER_MAP;
 		String fsrcKS = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER.replace("<JOBNAME>", jobName) + Constants.BROADCAST_KEY_SERVER_MAP;
 		
 		System.out.println("\tMKM " + allMasterMKMs);

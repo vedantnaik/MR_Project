@@ -353,17 +353,18 @@ public class FileSys {
 		
 		ObjectOutputStream finalOOS = null;
 		for (File valuesFile : reducerInputFolder.listFiles()){
-			FileReaderIterator valuesIter = new FileReaderIterator(valuesFile); 
+			FileReaderIterator<Object> valuesIter = new FileReaderIterator<Object>(valuesFile); 
 			System.out.println("Merging " + valuesFile);
 			for(Object valueObject : valuesIter){
 				finalOOS = getOOS(finalValuesFile);
 				finalOOS.writeObject(valueObject);
+
+				if(null != finalOOS){
+					finalOOS.close();
+				}
 			}
 			
 			valuesFile.delete();
-		}
-		if(null != finalOOS){
-			finalOOS.close();
 		}
 	}
 	

@@ -8,11 +8,11 @@ import java.util.Iterator;
 
 import fs.FileSys;
 
-public class FileReaderIterator implements Iterable<Object>, Iterator<Object>{
+public class FileReaderIterator<T> implements Iterable<T>, Iterator<T>{
 
 	ObjectInputStream ois;
 	File fileToRead;
-	Object cachedObj;
+	T cachedObj;
 	
 	public FileReaderIterator(File fileToRead) throws IOException {
 		this.fileToRead = fileToRead;
@@ -23,7 +23,7 @@ public class FileReaderIterator implements Iterable<Object>, Iterator<Object>{
 	@Override
 	public boolean hasNext() {
 		try {
-			this.cachedObj = ois.readObject();
+			this.cachedObj = (T) ois.readObject();
 			return true;
 		} catch (IOException e) {
 			return false;
@@ -33,10 +33,10 @@ public class FileReaderIterator implements Iterable<Object>, Iterator<Object>{
 	}
 
 	@Override
-	public Object next() {
+	public T next() {
 		// TODO: make copy constructor
 		// 		find a better approach
-		Object objToReturn = this.cachedObj;//.toString();
+		T objToReturn = this.cachedObj;//.toString();
 		this.cachedObj = null;
 		return objToReturn;
 	}
@@ -45,10 +45,10 @@ public class FileReaderIterator implements Iterable<Object>, Iterator<Object>{
 	public void remove() { throw new UnsupportedOperationException("Remove not supported by us!"); }
 
 	@Override
-	public Iterator<Object> iterator() {
-		FileInputStream fileStream;
+	public Iterator<T> iterator() {
+//		FileInputStream fileStream;
 		try {
-			return new FileReaderIterator(this.fileToRead);
+			return new FileReaderIterator<T>(this.fileToRead);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -68,7 +68,7 @@ public class Server implements Runnable {
 	private static boolean receivingMapFiles = false;
 
 	//
-	private Map<String, Object> masterKeyServerMap;
+	private static Map<String, Object> masterKeyServerMap;
 	
 	/**
 	 * The Server which accepts a connection and starts a new
@@ -376,7 +376,7 @@ public class Server implements Runnable {
 		// for corresponding server#
 		masterKeyServerMap = null;
 		try {
-		String masterBroadcastKeyServerMap = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER
+		String masterBroadcastKeyServerMap = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER
 				.replace("<JOBNAME>", job.getJobName()) + Constants.BROADCAST_KEY_SERVER_MAP;
 		
 		ObjectInputStream iis = new ObjectInputStream(new FileInputStream(
@@ -407,7 +407,7 @@ public class Server implements Runnable {
 		HashMap<String, Object> masterMKMs = null;
 		try {
 			// read mkm from file
-			String masterBroadcastMKM = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER
+			String masterBroadcastMKM = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER
 					.replace("<JOBNAME>", job.getJobName()) + Constants.BROADCAST_MKM_MAP;
 			
 			ObjectInputStream iis = new ObjectInputStream(new FileInputStream(
