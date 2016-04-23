@@ -146,9 +146,10 @@ public class LoadDistributor {
 	 * USAGE:
 	 * at each server
 	 * after received broadcast map
+	 * @throws InterruptedException 
 	 * */
 	// NOTE: Changing mapkey from string to int, for both moveMapperTempFiles*
-	public static void moveValuesFilesToReducerInputLocations(Map<String, Object> broadcastMap, int localServerNumber, Job currentJob){
+	public static void moveValuesFilesToReducerInputLocations(Map<String, Object> broadcastMap, int localServerNumber, Job currentJob) {
 		
 //		String jobName = currentJob.getJobName();
 		
@@ -220,8 +221,8 @@ public class LoadDistributor {
 		for (String keys : broadcastMap.keySet()){
 			String hashcode = (String) keys;
 			
-			String reducerInputLocationKeyFolder = reducerInputLocation + hashcode
-					+ Constants.UNIX_FILE_SEPARATOR;
+			String reducerInputLocationKeyFolder = reducerInputLocation + hashcode;
+//					+ Constants.UNIX_FILE_SEPARATOR;
 			System.out.println("creating reducer input folder with key "
 					+ reducerInputLocationKeyFolder);
 			File keyFolder = new File(reducerInputLocationKeyFolder);

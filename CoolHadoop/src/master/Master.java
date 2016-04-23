@@ -233,7 +233,7 @@ public class Master {
 	}
 
 	private void merge_mkms_and_send_mastermkm_back(String jobName) throws FileNotFoundException, ClassNotFoundException, 
-				IOException, JSchException, SftpException {
+				IOException, JSchException, SftpException, InterruptedException {
 		// TODO Auto-generated method stub
 		//hashmap
 		

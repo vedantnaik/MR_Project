@@ -275,6 +275,7 @@ public class Server implements Runnable {
 					new File(receivedResult[1]+Constants.JOBEXTN)));
 			job = (Job) iis.readObject();
 			iis.close();
+			System.out.println("job filesize " + new File(receivedResult[1]+Constants.JOBEXTN).length());
 			System.out.println("job details " + job);
 			outClient = out;
 			outClient.writeBytes(Constants.JOBREAD + "#" + serverNumber + "\n");
@@ -369,6 +370,7 @@ public class Server implements Runnable {
 	/**
 	 * Call the shuffle and sort phase
 	 * @throws IOException
+	 * @throws InterruptedException 
 	 */
 	private void start_shuffle_and_sort() throws IOException {
 		// TODO: Call functions
@@ -390,6 +392,13 @@ public class Server implements Runnable {
 		}
 		System.out.println("moving Values Files To Reducer Input Locations");
 		LoadDistributor.makeAllKeyFolderLocations(masterKeyServerMap, job.getJobName());
+		try {
+			Thread.sleep(30000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			System.out.println("sleep failed");
+			e.printStackTrace();
+		}
 		LoadDistributor.moveValuesFilesToReducerInputLocations(masterKeyServerMap, serverNumber, job);
 		// merge to single key remains perhaps
 		

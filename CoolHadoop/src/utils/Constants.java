@@ -61,7 +61,7 @@ public class Constants {
 	public static final String ABSOLUTE_REDUCER_INPUT_FOLDER = "~/Project/input/<JOBNAME>/reducer/<KEY>/";
 	
 	public static final String RELATIVE_REDUCER_INPUT_FILE = "./input/<JOBNAME>/reducer/<KEY>/values<SERVERNUMBER>.txt";
-	public static final String ABSOLUTE_REDUCER_INPUT_FILE = "~/Project/input/<JOBNAME>/reducer/<KEY>/values<SERVERNUMBER>.txt";
+	public static final String ABSOLUTE_REDUCER_INPUT_FILE = "Project/input/<JOBNAME>/reducer/<KEY>/values<SERVERNUMBER>.txt";
 	public static final String ABS_REDUCER_INPUT_FILE = PROJECT_HOME + "input/<JOBNAME>/reducer/<KEY>/values<SERVERNUMBER>.txt";
 	
 	public static final String RELATIVE_COMBINED_REDUCER_INPUT_FILE = "./input/<JOBNAME>/reducer/<KEY>/values.txt";

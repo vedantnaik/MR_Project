@@ -171,6 +171,7 @@ public class FileSys {
 	 * @throws JSchException 
 	 * @throws IOException 
 	 * @throws SocketException 
+	 * @throws InterruptedException 
 	 * */
 	// NOTE: Changing from mapkey from String to int
 	public static void moveMapperTempFilesToRemoteReducers(int localServerNumber, String mapKey, int foreignServerNumber, Job currentJob) throws SocketException, IOException, JSchException, SftpException{
@@ -182,8 +183,8 @@ public class FileSys {
 		String destFolderStr = Constants.ABS_REDUCER_INPUT_FOLDER
 										.replace("<JOBNAME>", currentJob.getJobName())
 										.replace("<KEY>", mapKey.toString());
-		
-		makeForeignFolderIfNotExist(destFolderStr, foreignServerNumber, currentJob);
+		// TODO: verify commenting
+//		makeForeignFolderIfNotExist(destFolderStr, foreignServerNumber, currentJob);
 		
 		
 		// copy file
@@ -192,20 +193,23 @@ public class FileSys {
 										.replace("<KEY>", mapKey.toString())
 										.replace("<SERVERNUMBER>", localServerNumber + "");
 		
-		String destFilePath = Constants.ABS_REDUCER_INPUT_FILE
+		String destFilePath = Constants.ABSOLUTE_REDUCER_INPUT_FILE
 										.replace("<JOBNAME>", currentJob.getJobName())
 										.replace("<KEY>", mapKey.toString())
 										.replace("<SERVERNUMBER>", localServerNumber + "");
 		
 		String destDns = currentJob.getConf().getServerIPaddrMap().get(new Integer(foreignServerNumber));
 		System.out.println("move mapper files to remote location from " + srcFilePath
-			+ " to " + destFilePath);
+			+ " to " + destFilePath + " destDns " + destDns);
 		
 		if (new File(srcFilePath).exists()) {
 			scpCopy(srcFilePath, destFilePath, destDns);
 		}else{
 			// noop
+			System.out.println("This file doesn't exists");
 		}
+		
+		
 	}
 	
 	
@@ -214,16 +218,20 @@ public class FileSys {
 	 * 			destination file path
 	 * 			destination EC2 instance's IP
 	 * Copies source file to destination on other server
+	 * @throws JSchException 
+	 * @throws InterruptedException 
 	 * */
 	// Reference : http://unix.stackexchange.com/questions/136165/java-code-to-copy-files-from-one-linux-machine-to-another-linux-machine
-	public static void scpCopy(String fsrc, String fdest, String destIP) throws SocketException, IOException, JSchException, SftpException{
+	public static void scpCopy(String fsrc, String fdest, String destIP) throws SocketException, JSchException{
 		JSch jsch = new JSch();
 		jsch.addIdentity(Constants.PEM_FILE_PATH);
 		
 		Session session = null;
-		session = jsch.getSession(Constants.EC2_USERNAME, destIP, Constants.SSH_PORT);
+		session = jsch.getSession(Constants.EC2_USERNAME, destIP);
 		
 		session.setPassword("");
+		// tem, revert if not working
+		session.setConfig("UserKnownHostsFile", "/dev/null");
 		session.setConfig("StrictHostKeyChecking", "no");
 	    session.connect();
 		
@@ -234,11 +242,54 @@ public class FileSys {
 //		File localFile = new File(fsrc);
 //		System.out.println("local file to copy name : " + fsrc + " localFileName " + localFile.getName());
 //		channel.put("sampleSortPartTemp/"+localFile.getName() , "Project/sampleSortMyParts/"+localFile.getName());
+		boolean done = false;
+		while(!done){
+			try{
+				channel.put(fsrc, fdest);
+			}catch(Exception e){
+				System.out.println("Continue JSCP");
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				continue;				
+			}
+			done = true;
+			System.out.println("waitfaing " + done);
+		}
+//		try{
+//		channel.put(fsrc, fdest);
+//		}finally{
+//			
+//		while (!channel.isClosed()) {
+//			System.out.println("waiting for isclosed ");
+//			System.out.println("checking exit status "
+//					+ channel.getExitStatus());
+//			if (channel.getExitStatus() == -1) {				
+//				channel.disconnect();
+//				session.disconnect();
+//				break;
+//			}
+//
+//			try {
+//				Thread.sleep(1000);
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				System.out.println("sleep failed");
+//				e.printStackTrace();
+//			}
+//		}
 		
-		channel.put(fsrc, fdest);
+		
+//		}
 	    
-		channel.disconnect();
-		session.disconnect();
+//		
+//		channel.disconnect();
+//		session.disconnect();
+//		jsch = null;
+		
 	}
 	
 	
@@ -386,6 +437,7 @@ public class FileSys {
 								.replace("<JOBNAME>", jobName)
 								.replace("<KEY>", mapKey.toString());
 		
+
 		FileSys.makeLocalFolderIfNotExist(destFolderStr);
 		
 		// move between dirs

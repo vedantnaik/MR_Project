@@ -1,5 +1,6 @@
 package coolmapreduce;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -267,7 +268,9 @@ public class Job implements Serializable {
 			String fullPath = Constants.PROJECT_HOME + filename;
 			System.out.println("moving " + filename + " to " + fullPath + " @ "
 					+ ip.getValue());
+			System.out.println("Job file length " + new File(filename).length());
 			FileSys.scpCopy(filename, fullPath, ip.getValue());
+			System.out.println("Job file length after " + new File(filename).length());
 		}
 
 	}

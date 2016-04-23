@@ -347,9 +347,10 @@ public class MapperHandler {
 	 * 		"~/Project/output/testJob/MKMs/mkmonserver1"
 	 * 
 	 * 2. delete local copy from this ec2 instance
+	 * @throws InterruptedException 
 	 * 
 	 * */
-	public void moveMapperKeyMapFileToMainServer(){
+	public void moveMapperKeyMapFileToMainServer() throws InterruptedException{
 		
 		String fsrcStr =  Constants.RELATIVE_MAPPER_KEY_MAPS_FOLDER
 									.replace("<JOBNAME>", currentJob.getJobName())
@@ -377,10 +378,10 @@ public class MapperHandler {
 		} catch (JSchException e) {
 			System.err.println("JSch Exception while trying to move MKM file from server " + localServerNumber);
 			e.printStackTrace();
-		} catch (SftpException e) {
+		} /*catch (SftpException e) {
 			System.err.println("Sftp Exception while trying to move MKM file from server " + localServerNumber);
 			e.printStackTrace();
-		}
+		}*/
 	}
 	
 	
@@ -408,10 +409,4 @@ public class MapperHandler {
 		return listOfMapperFiles.add(_file);
 	}
 	
-	public static void main(String[] args) {
-		Job _currentJob = Job.getInstance(null);
-		_currentJob.setJobName("mywordcount");
-		MapperHandler handle = new MapperHandler(_currentJob, 0);
-		handle.make_folders_cleanup_files();
-	}
 }
