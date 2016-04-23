@@ -236,8 +236,27 @@ public class FileSys {
 	    session.connect();
 		
 	    ChannelSftp channel = null;
-		channel = (ChannelSftp)session.openChannel("sftp");
-		channel.connect();
+	    boolean channeldone = false;
+	    while(!channeldone){
+	    	
+	    	try{
+	    		channel = (ChannelSftp)session.openChannel("sftp");
+	    		channel.connect();
+	    	}catch(Exception e){
+				System.out.println("Continue channel opening");
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				continue;				
+			}
+	    	channeldone = true;
+			System.out.println("waiting for channel open " + channeldone);
+	    	
+	    }
+
 		
 //		File localFile = new File(fsrc);
 //		System.out.println("local file to copy name : " + fsrc + " localFileName " + localFile.getName());
@@ -285,10 +304,10 @@ public class FileSys {
 		
 //		}
 	    
-//		
-//		channel.disconnect();
-//		session.disconnect();
-//		jsch = null;
+		
+		channel.disconnect();
+		session.disconnect();
+		jsch = null;
 		
 	}
 	
