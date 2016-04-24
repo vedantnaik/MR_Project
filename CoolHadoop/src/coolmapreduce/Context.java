@@ -121,4 +121,8 @@ public class Context {
 		this.mapperKeysMap = mapperKeysMap;
 	}
 	
+	
+	public Configuration getConfiguration(){
+		return this.currentJob.getConf();
+	}
 }

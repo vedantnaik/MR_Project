@@ -46,6 +46,7 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
+import coolmapreduce.Context;
 import coolmapreduce.Job;
 import coolmapreduce.MapperHandler;
 
@@ -583,6 +584,62 @@ public class FileSys {
 		
 		// delete local copy
 		localFileToMove.delete();
+	}
+	
+	
+	/**
+	 * Given context and a folder location on output S3 bucket, move the given localFile to that location
+	 * */
+	public static void moveToFolderOnOutputBucket(Context context, String folderPath, File localFile){
+		
+
+		// Rename
+		String fileNameOnS3Bucket = folderPath + "/" + localFile.getName();
+		
+		// Move to S3 bucket
+		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+		AmazonS3 s3client = new AmazonS3Client(credentials);
+		AccessControlList acl = new AccessControlList();
+		acl.grantPermission(GroupGrantee.AllUsers, Permission.Read);
+		
+		System.out.println("Moving file to S3 bucket: " + localFile.getName() + " to S3 location " + fileNameOnS3Bucket);
+		
+		PutObjectResult result = s3client
+		.putObject(new PutObjectRequest(context.getConfiguration().get(Constants.OUTPUT_BUCKET_NAME), 
+										fileNameOnS3Bucket, 
+										localFile).withAccessControlList(acl));
+		System.out.println("Result of move " + localFile 
+		+ " to output S3:\n"
+		+ result);
+		
+		// delete local copy
+//		localFileToMove.delete();
+		
+	}
+	
+	
+	/**
+	 * Given context and a folder location on output S3 bucket and a file in that folder,
+	 * copy the file to local disk
+	 * */
+	public static InputStream getInputStreamForFileFromBucket(Context context, String folderPath, File fileToCopy){
+				
+		ArrayList<String> dataRecordList = new ArrayList<String>();
+		try {
+			AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+			AmazonS3 s3client = new AmazonS3Client(credentials);
+			S3Object s3object = s3client
+					.getObject(new GetObjectRequest(context.getConfiguration().get(Constants.OUTPUT_BUCKET_NAME), 
+							folderPath + "/" + fileToCopy));
+			
+			return new ObjectInputStream(s3object.getObjectContent());
+			
+		} catch (IOException e) {
+			System.out.println("Unable to read file from Input S3 Bucket");
+			e.printStackTrace();
+		}
+		
+		return null;
 	}
 	
 	///////////////////////////////
