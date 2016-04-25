@@ -19,7 +19,11 @@ import utils.Constants;
 
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
-
+/**
+ * 
+ * @author Vedant_Naik, Dixit_Patel
+ *
+ */
 public class MapperHandler {
 
 	/**

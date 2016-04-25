@@ -10,6 +10,11 @@ import java.util.Map;
 
 import utils.Constants;
 
+/**
+ * 
+ * @author Vedant_Naik, Dixit_Patel
+ *
+ */
 public class ReducerHandler {
 
 	

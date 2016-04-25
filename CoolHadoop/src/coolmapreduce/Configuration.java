@@ -7,7 +7,11 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 import utils.Constants;
-
+/**
+ * 
+ * @author Vedant_Naik, Dixit_Patel, Vaibhav_Tyagi
+ *
+ */
 public class Configuration implements Serializable{
 	
 	private HashMap<Integer, String> serverIPaddrMap;

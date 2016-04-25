@@ -19,7 +19,11 @@ import coolmapreduce.Job;
 import fs.FileSys;
 import static java.nio.file.StandardCopyOption.*;
 import utils.Constants;
-
+/**
+ * 
+ * @author Vedant_Naik, Vaibhav_Tyagi
+ *
+ */
 public class LoadDistributor {
 
 	/**

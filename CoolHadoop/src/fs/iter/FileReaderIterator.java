@@ -7,7 +7,11 @@ import java.io.ObjectInputStream;
 import java.util.Iterator;
 
 import fs.FileSys;
-
+/**
+ * 
+ * @author Vedant_Naik, Vaibhav_Tyagi
+ *
+ */
 public class FileReaderIterator<T> implements Iterable<T>, Iterator<T>{
 
 	ObjectInputStream ois;

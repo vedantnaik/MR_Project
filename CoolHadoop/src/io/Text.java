@@ -4,7 +4,11 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 
-
+/**
+ * 
+ * @author Vedant_Naik, Vaibhav_Tyagi, Dixit_Patel, Rohan_Joshi
+ *
+ */
 public class Text implements Writable{
 
 	private static final long serialVersionUID = 1L;

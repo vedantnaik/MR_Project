@@ -37,6 +37,7 @@ import fs.shuffler.LoadDistributor;
 /**
  * A Master which controls the slave Servers and can issue commands It can also
  * kill the server slaves and self destruct itself!
+ * @author Dixit_Patel
  */
 public class Master {
 

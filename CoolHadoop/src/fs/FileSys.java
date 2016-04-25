@@ -49,7 +49,11 @@ import com.jcraft.jsch.SftpException;
 import coolmapreduce.Context;
 import coolmapreduce.Job;
 import coolmapreduce.MapperHandler;
-
+/**
+ * 
+ * @author Vedant_Naik, Vaibhav_Tyagi, Dixit_Patel, Rohan_Joshi
+ *
+ */
 public class FileSys {
 	
 	/********************************************************************************************

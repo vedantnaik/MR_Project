@@ -26,6 +26,7 @@ import fs.shuffler.LoadDistributor;
  * Server program which listens on the port 1210 or local-port 
  * as defined by the program. It has the capability to listen and
  * execute commands as per Master. 
+ * @author Dixit_Patel
  */
 public class Server implements Runnable {
 	private Socket connection = null;

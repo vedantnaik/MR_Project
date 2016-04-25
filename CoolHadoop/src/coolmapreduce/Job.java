@@ -19,7 +19,9 @@ import fs.FileSys;
 
 /**
  * Job class which is Serializable Contains the configuration object
+ * @author Dixit_Patel, Vedant_Naik, Vaibhav_Tyagi
  */
+
 public class Job implements Serializable {
 
 	/**
