@@ -56,6 +56,15 @@ public class FileReaderIterator<T> implements Iterable<T>, Iterator<T>{
 		}
 	}
 
+	public void close() {
+		try {
+			this.ois.close();
+//			System.out.println("closing ois");
+		} catch (IOException e) {
+			System.out.println("OIS already closed");			
+		}		
+	}
+
 
 	
 }

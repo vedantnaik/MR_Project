@@ -21,6 +21,10 @@ public class Text implements Writable{
 		text = new String(_text);
 	}
 	
+	public Text(Text _text){
+		text = new String(_text.text);
+	}
+	
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub

@@ -425,16 +425,17 @@ public class FileSys {
 		ObjectOutputStream finalOOS = null;
 		for (File valuesFile : reducerInputFolder.listFiles()){
 			FileReaderIterator<Object> valuesIter = new FileReaderIterator<Object>(valuesFile); 
-			System.out.println("Merging " + valuesFile);
+//			System.out.println("Merging " + valuesFile);
 			for(Object valueObject : valuesIter){
 				finalOOS = getOOS(finalValuesFile);
 				finalOOS.writeObject(valueObject);
 
 				if(null != finalOOS){
+//					System.out.println("cloosing finaloos " + valueObject);
 					finalOOS.close();
 				}
 			}
-			
+			valuesIter.close();
 			valuesFile.delete();
 		}
 	}
@@ -574,16 +575,18 @@ public class FileSys {
 		File localFileToMove = new File(localFileToMoveStr);
 		System.out.println("Moving reducer output part file from server : " + localServerNumber);
 
-		PutObjectResult result = s3client
-				.putObject(new PutObjectRequest(outputS3BucketName, 
-												fileNameOnS3Bucket, 
-												localFileToMove).withAccessControlList(acl));
-		System.out.println("Result of move from Server-" + localServerNumber 
-				+ " to output S3:\n"
-				+ result);
-		
-		// delete local copy
-		localFileToMove.delete();
+			
+		if (new File(localFileToMoveStr).exists()) {
+			
+			PutObjectResult result = s3client.putObject(new PutObjectRequest(
+					outputS3BucketName, fileNameOnS3Bucket, localFileToMove)
+					.withAccessControlList(acl));
+			
+			System.out.println("Result of move from Server-"
+					+ localServerNumber + " to output S3:\n" + result);
+			// delete local copy
+			localFileToMove.delete();
+		}
 	}
 	
 	
@@ -628,9 +631,13 @@ public class FileSys {
 		try {
 			AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 			AmazonS3 s3client = new AmazonS3Client(credentials);
+			System.out.println("getting outputbucket" + context.getConfiguration().get(Constants.OUTPUT_BUCKET_NAME) );
+			System.out.println("reading " + folderPath + " filetoCopy " + fileToCopy);
 			S3Object s3object = s3client
 					.getObject(new GetObjectRequest(context.getConfiguration().get(Constants.OUTPUT_BUCKET_NAME), 
 							folderPath + "/" + fileToCopy));
+			
+			
 			
 			return new ObjectInputStream(s3object.getObjectContent());
 			

@@ -183,11 +183,12 @@ public class Master {
 						+ partsMap.get(i));
 				
 				// TODO: Null check
-				for (String fileNameIter : partsMap.get(i)) {
-					out.get(i).writeBytes(fileNameIter + "\n");
-					Thread.sleep(1000);
+				if(null != partsMap.get(i)){
+					for (String fileNameIter : partsMap.get(i)) {
+						out.get(i).writeBytes(fileNameIter + "\n");
+						Thread.sleep(1000);
+					}
 				}
-
 				out.get(i).writeBytes(
 						Constants.MAPFILES + "#" + Constants.END + "\n");
 				System.out.println("Files sent to Server ..." + i);
@@ -206,7 +207,7 @@ public class Master {
 			// to accomodate failure and restart on some node later
 			
 			// Send master MKM back to all slave servers
-			merge_mkms_and_send_mastermkm_back(job.getJobName());
+			merge_mkms_and_send_mastermkm_back(job);
 
 			// 5. Send SHUFFLEANDSORT to all servers
 			sendAConstant(Constants.SHUFFLEANDSORT, Constants.START);
@@ -232,7 +233,7 @@ public class Master {
 		}
 	}
 
-	private void merge_mkms_and_send_mastermkm_back(String jobName) throws FileNotFoundException, ClassNotFoundException, 
+	private void merge_mkms_and_send_mastermkm_back(Job job) throws FileNotFoundException, ClassNotFoundException, 
 				IOException, JSchException, SftpException, InterruptedException {
 		// TODO Auto-generated method stub
 		//hashmap
@@ -241,7 +242,7 @@ public class Master {
 		// merge func call
 		// set call / union 
 		// 
-		
+		String jobName = job.getJobName();
 		// {haskeys : originalkeys}
 		Map<String, Object> allMasterMKMs = readAllMKMs(jobName);		
 		
@@ -271,12 +272,15 @@ public class Master {
 		System.out.println("\tMKM " + allMasterMKMs);
 		System.out.println("\tKeyServer Map " + broadcastKeyServerMap);
 		
-		
+		String masterIP = job.getConf().get(
+				Constants.MASTER_SERVER_IP_KEY);
 		for (int i = 0; i < totalServers; i++) {
 			System.out.println("Moving MKMs from " + fsrc + "  to " + servers.get(i) + " @ "
 					+ fdest);
+			if (!(servers.get(i).equalsIgnoreCase(masterIP))) {
 			FileSys.scpCopy(fsrc, fdest, servers.get(i));
 			FileSys.scpCopy(fsrcKS, fdestKS, servers.get(i));
+			}
 		}		
 		
 	}
@@ -417,7 +421,8 @@ public class Master {
 		ObjectListing objList = s3client.listObjects(inputBucketName);
 
 		for(S3ObjectSummary objSum : objList.getObjectSummaries() ){
-			if(objSum.getKey().contains(inputFolder) && objSum.getKey().length() > inputFolder.length() + 2){
+			if(objSum.getKey().contains(inputFolder) && objSum.getKey().contains(".gz") 
+					&& objSum.getKey().length() > inputFolder.length() + 2){
 				objectSummaries.add(objSum.getKey() + ":" + objSum.getSize());
 			}
 		}

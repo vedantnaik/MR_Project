@@ -163,8 +163,7 @@ public class Job implements Serializable {
 	 * @throws JSchException
 	 */
 
-	public boolean waitForCompletion(boolean verbose) throws IOException,
-			JSchException, SftpException {
+	public boolean waitForCompletion(boolean verbose) throws IOException {
 		// TODO:
 		// write "this" object to file (jobfile_jobname)
 		// Tried in test program, works
@@ -260,17 +259,28 @@ public class Job implements Serializable {
 	 * @throws SftpException
 	 */
 	public void moveToSlaves(String filename) throws SocketException,
-			IOException, JSchException, SftpException {
-
-		for (Map.Entry<Integer, String> ip : getConf().getServerIPaddrMap()
-				.entrySet()) {
-
-			String fullPath = Constants.PROJECT_HOME + filename;
-			System.out.println("moving " + filename + " to " + fullPath + " @ "
-					+ ip.getValue());
-			System.out.println("Job file length " + new File(filename).length());
-			FileSys.scpCopy(filename, fullPath, ip.getValue());
-			System.out.println("Job file length after " + new File(filename).length());
+			IOException {
+		try {
+			String masterIP = getConf().get(
+					Constants.MASTER_SERVER_IP_KEY);
+			System.out.println("masterIP " + masterIP);
+			for (Map.Entry<Integer, String> ip : getConf().getServerIPaddrMap()
+					.entrySet()) {
+				if (!(ip.getValue().equalsIgnoreCase(masterIP))) {
+					String fullPath = Constants.PROJECT_HOME + filename;
+					System.out.println("moving " + filename + " to " + fullPath
+							+ " @ " + ip.getValue());
+					System.out.println("Job file length "
+							+ new File(filename).length());
+					FileSys.scpCopy(filename, fullPath, ip.getValue());
+					System.out.println("Job file length after "
+							+ new File(filename).length());
+				}else{
+					System.out.println("not moving jobfile, master-slave same!");
+				}
+			}
+		} catch (JSchException e) {
+			System.out.println("Throws sftp exception");
 		}
 
 	}

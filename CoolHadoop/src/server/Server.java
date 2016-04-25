@@ -49,17 +49,7 @@ public class Server implements Runnable {
 	// map and reduce functions of the framework
 	private static MapperHandler mapperhandlerInstance = null;
 	private static ReducerHandler reducerhandlerInstance = null;
-	private static Map<Job, MapperHandler> mapOfMapperHandlers = null;
 
-	
-	// the the input bucket name, the output bucket name, 
-	// the input folder inside bucket,  the output folder inside bucket
-	
-	private static String inputBucketName;
-	private static String outputBucketName;
-	private static String inputFolder;
-	private static String outputFolder;
-		
 	private static Configuration config;
 	private static Job job;
 	
@@ -113,51 +103,31 @@ public class Server implements Runnable {
 	}
 
 	public static void main(String args[]) throws Exception {
-		if (args.length < 5) {
+		if (args.length < 1) {
 			System.out.println("Syntax error: Include my Number");
 			System.out
-					.println("Usage: Server <servernumber> <InputBucketName>"
-							+ "<outputBucketName> <inputFolder> <outputFolder> <LOCAL/nothing>");
-			System.out.println("Server 0 some some some some LOCAL");
+					.println("Usage: Server <servernumber> <LOCAL/nothing>");
+			System.out.println("Server 0 LOCAL");
 			System.out.println("or");
-			System.out.println("Server 0 some some some some");
+			System.out.println("Server 0");
 			System.exit(0);
 		}
 		serverNumber = Integer.parseInt(args[0]);
-		inputBucketName = args[1];
-		outputBucketName = args[2];
-		inputFolder = args[3];
-		outputFolder = args[4];
-		
-		if(args.length > 5 && args[5].equals(Constants.LOCAL))
+
+		if(args.length > 1 && args[1].equals(Constants.LOCAL))
 			localServersFlag = true;
 
-		System.out.println("Input bucket: " + inputBucketName);
-		System.out.println("Output bucket: " + outputBucketName);
-		System.out.println("Input folder: " + inputFolder);
-		System.out.println("Output folder: " + outputFolder);
 		System.out.println("Running Local? : " + localServersFlag);
 
-		// MRFS = new FileSystem(inputBucketName, outputBucketName, inputFolder,
-		// outputFolder);
-		
-		// REMOVE1 : for now before sending Job
 		config = new Configuration();
-//
-//		config.set(Constants.INPUT_BUCKET_NAME, Master.PATH);
-//		job = Job.getInstance(config);
-//		job.setMapperClass(TokenizerMapper.class);
-//		
-//		// REMOVE1 : remove till here 
-//		job = Job.getInstance(config);
 		
 		lock = new Object();
-//		replied = new boolean[totalServers];
 
 		totalServers = config.getServerIPaddrMap().size();
 		numberOfProcessors = totalServers;
 		System.out.println("totalServers "
 				+ config.getServerIPaddrMap().size());
+		
 		outDist = new HashMap<>(2 * totalServers);
 		sendingSocketDist = new HashMap<>(2 * totalServers);
 
@@ -392,13 +362,7 @@ public class Server implements Runnable {
 		}
 		System.out.println("moving Values Files To Reducer Input Locations");
 		LoadDistributor.makeAllKeyFolderLocations(masterKeyServerMap, job.getJobName());
-		try {
-			Thread.sleep(30000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			System.out.println("sleep failed");
-			e.printStackTrace();
-		}
+
 		LoadDistributor.moveValuesFilesToReducerInputLocations(masterKeyServerMap, serverNumber, job);
 		// merge to single key remains perhaps
 		
