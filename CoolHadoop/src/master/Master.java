@@ -228,13 +228,20 @@ public class Master {
 		}
 	}
 
+	/**
+	 * Merge MKM's into a master MKM and create a broadcastmap containing the key vs serverNumber to 
+	 * determine which server the particualar hash<key> is to be sent to
+	 * @param job The Job class object
+	 * @throws FileNotFoundException
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 * @throws JSchException
+	 * @throws SftpException
+	 * @throws InterruptedException
+	 */
 	private void merge_mkms_and_send_mastermkm_back(Job job) throws FileNotFoundException, ClassNotFoundException, 
 				IOException, JSchException, SftpException, InterruptedException {
 		
-		// each file in masterMKM
-		// merge func call
-		// set call / union 
-		// 
 		String jobName = job.getJobName();
 		// {haskeys : originalkeys}
 		Map<String, Object> allMasterMKMs = readAllMKMs(jobName);		
@@ -278,6 +285,15 @@ public class Master {
 		
 	}
 	
+	/**
+	 * Read all the MKM's received from the slave servers into a master MKM from 
+	 * the MASTER_MAPPER_KEY_MAPS_FOLDER
+	 * @param jobName the job name
+	 * @return Map of String and Any Object received as key 
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
 	public Map<String, Object> readAllMKMs(String jobName) throws FileNotFoundException, IOException, ClassNotFoundException{
 		
 		String mapperOutputFolderStr = Constants.MASTER_MAPPER_KEY_MAPS_FOLDER
