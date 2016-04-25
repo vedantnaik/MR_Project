@@ -179,7 +179,6 @@ public class Master {
 				System.out.println("Map Parts to " + servers.get(i) + " => "
 						+ partsMap.get(i));
 				
-				// TODO: Null check
 				if(null != partsMap.get(i)){
 					for (String fileNameIter : partsMap.get(i)) {
 						out.get(i).writeBytes(fileNameIter + "\n");

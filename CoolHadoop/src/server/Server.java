@@ -318,11 +318,10 @@ public class Server implements Runnable {
 		System.out.println("Mapper Starts");
 
 		try {
-			// later split and start multiple mappers with threads
 			mapperhandlerInstance.runMapperHandler();
 		} catch (Exception e) {
 			e.printStackTrace();
-			// send to Master only, change numbers for master
+			// send to Master only
 			System.out.println("Sending " + 
 					Constants.MAPFAILURE + " to Master");
 			outDist.get(0).writeBytes(
@@ -361,7 +360,6 @@ public class Server implements Runnable {
 		LoadDistributor.makeAllKeyFolderLocations(masterKeyServerMap, job.getJobName());
 
 		LoadDistributor.moveValuesFilesToReducerInputLocations(masterKeyServerMap, serverNumber, job);
-		// merge to single key remains perhaps
 		
 		outClient.writeBytes(
 				Constants.SHUFFLEFINISH + "#" + serverNumber + "\n");
