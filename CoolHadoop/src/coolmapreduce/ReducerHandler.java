@@ -14,15 +14,15 @@ public class ReducerHandler {
 
 	
 	/**
-	 * TODO: Reducer Handler Req.
+	 * Reducer Handler 
 	 * 
 	 * APPEND ALL INPUT FILES WHILE SHUFFLING TO ONE FILE FOR THAT KEY
 	 * 
-	 * 
 	 * 1. Get signal from master node to start reduce phase Need location of
-	 * temp output by mapper nodes 2. Move my temp output files from all mappers
-	 * for a job to my instance ./output/<JobName>/mapper/<key>/values.txt 3.
-	 * For each key make a reduce call 3. Combine all mapper output files for a
+	 * temp output by mapper nodes 
+	 * 2. Move my temp output files from all mappers
+	 * for a job to my instance ./output/<JobName>/mapper/<key>/values.txt 
+	 * 3. For each key make a reduce call 3. Combine all mapper output files for a
 	 * key such that, for each key : list of iterables for its values are given
 	 * 
 	 * */
@@ -58,9 +58,7 @@ public class ReducerHandler {
 	// get context from job for now class variable
 	Context contextVariable = null;
 
-	// Assumes each MapperHandler has a list of files to work
-	// on
-
+	// Assumes each MapperHandler has a list of files to work on
 	public ReducerHandler() {
 		currentJob = null;
 	}
@@ -74,6 +72,12 @@ public class ReducerHandler {
 		broadcastedMKM = _broadcastedMKM;
 	}
 
+	
+	/**
+	 * Given a master key server map, handle keys that are to be handled on this reducer instance
+	 * by checking with the localServerNumber. If the key is to be handled on this server,
+	 * read the values.txt file from the input folder and invoke the reduce call in Reducer
+	 * */
 	public void runReducerHandler(Map<String, Object> masterKeyServerMap) throws Exception {
 
 		System.out.println("\tStarting Reducer for "
@@ -113,10 +117,11 @@ public class ReducerHandler {
 		FileSys.moveFinalReducerOutputToS3Bucket(currentJob.getConf().get(Constants.OUTPUT_BUCKET_NAME), 
 				currentJob.getConf().get(Constants.OUTPUT_FOLDER), currentJob.getJobName(), localServerNumber);
 		phase = Constants.MAP_FINISH;
-		
-
 	}
 
+	/**
+	 * Invokes the setup method. If not overridden, the invoked method does noop
+	 * */
 	public void reducerHandlerSetup() throws Exception {
 		// setup phase
 		try {
@@ -132,8 +137,6 @@ public class ReducerHandler {
 
 		} catch (Exception e) {
 			System.out.println("exception in init of setup");
-//			e.printStackTrace();
-//			throw e;
 			System.out.println("No setup found for Reducer");
 		}
 
@@ -171,6 +174,10 @@ public class ReducerHandler {
 
 	}
 
+	/**
+	 * Given a key and the hashed value of that key (by which name the folder exists)
+	 * read the file using FileReaderIterator and invoke the reduce method
+	 * */
 	public void reducerHandlerForKey(Text key, String hashedKeyFolderName)
 			throws Exception {
 		System.out.println("Invoking reduce function");
@@ -195,8 +202,10 @@ public class ReducerHandler {
 		}
 	}
 
+	/**
+	 * Invokes the cleanup method. If not overridden, the invoked method does noop
+	 * */
 	private void reducerHandlerCleanup() throws Exception {
-
 		try {
 			System.out.println("\tCalling cleanup::Reducer "
 					+ currentJob.getReducerClass().toString());
@@ -211,8 +220,6 @@ public class ReducerHandler {
 		} catch (Exception e) {
 
 			System.out.println("exception in init of cleaup");
-//			e.printStackTrace();
-//			throw e;
 			System.out.println("No cleanup found for Reducer");
 		}
 

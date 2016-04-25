@@ -51,7 +51,6 @@ public class Constants {
 	public static final String ABSOLUTE_OUTPUT_LOCATION = PROJECT_HOME + "/output/";
 	public static final String ABSOLUTE_JOB_FOLDER = ABSOLUTE_OUTPUT_LOCATION + "/<JOBNAME>/";
 	public static final String ABSOLUTE_MAPPER_FOLDER = ABSOLUTE_JOB_FOLDER + "/mapper/";
-
 	
 	// --	Reducer
 	public static final String RELATIVE_REDUCER_INPUT_FOLDER = "./input/<JOBNAME>/reducer/<KEY>/";
@@ -89,9 +88,7 @@ public class Constants {
 	public static final Object LOCAL = "LOCAL";
 	
 	
-	
 	// Phases
-	
 	public static final String OUR_INIT = "OUR_INIT";
 	public static final String SETUP = "SETUP";
 	public static final String CLEANUP = "CLEANUP";
@@ -110,25 +107,6 @@ public class Constants {
 	public static final String FILES_READ = "FILES_READ";
 
 	// MAP REDUCE phase identifier for Context.write()
-	
 	public static final String CTX_MAP_PHASE = "CTX_MAP_PHASE";
-	public static final String CTX_RED_PHASE = "CTX_RED_PHASE";
-
-
-
-
-	
-	
-	/**
-	 * Folders to make
-	 * 
-	 * ./output/
-	 * ./output/<JOBNAME>
-	 * ./output/<JOBNAME>/mapper
-	 * ./output/<JOBNAME>/reducer
-	 * 
-	 * 
-	 * 
-	 * */
-	
+	public static final String CTX_RED_PHASE = "CTX_RED_PHASE";	
 }

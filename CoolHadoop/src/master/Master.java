@@ -103,7 +103,6 @@ public class Master {
 	 * @throws IOException
 	 */
 	public void initServerSockets() throws UnknownHostException, IOException {
-//		System.out.println("Running LOCAL " + localServersFlag);
 		
 		for (int i = 0; i < totalServers; i++) {
 			if (localServersFlag) {
@@ -160,10 +159,8 @@ public class Master {
 	public void startJob(Job job, String inputBucketName,
 			String outputBucketName, String inputFolder, String outputFolder)
 			throws IOException {
-		// TODO: Should return boolean
 
 		FileSys.makeFolderStructureOnMaster(job.getJobName());
-		// TODO: remove mimicMyParts
 		Map<Integer, List<String>> partsMap = getS3Parts(inputBucketName, inputFolder, totalServers);
 
 		try {
@@ -203,8 +200,6 @@ public class Master {
 			// 4. wait for MAPFINISH#Number from all servers
 			// or replies MAPFAILURE#Number
 			waitForReply(Constants.MAP_FINISH);
-			// TODO: What todo if FAILURE? restructure fun
-			// to accomodate failure and restart on some node later
 			
 			// Send master MKM back to all slave servers
 			merge_mkms_and_send_mastermkm_back(job);
@@ -235,8 +230,6 @@ public class Master {
 
 	private void merge_mkms_and_send_mastermkm_back(Job job) throws FileNotFoundException, ClassNotFoundException, 
 				IOException, JSchException, SftpException, InterruptedException {
-		// TODO Auto-generated method stub
-		//hashmap
 		
 		// each file in masterMKM
 		// merge func call
@@ -323,7 +316,6 @@ public class Master {
 			throws IOException {
 		System.out
 				.println("sending command to " + _constant1 + " " + _beginEnd);
-		// distribute pivots
 		for (int i = 0; i < totalServers; i++) {
 			out.get(i).writeBytes(_constant1 + "#" + _beginEnd + "\n");
 		}

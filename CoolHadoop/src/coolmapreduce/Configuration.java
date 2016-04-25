@@ -13,45 +13,25 @@ public class Configuration implements Serializable{
 	private HashMap<Integer, String> serverIPaddrMap;
 	private HashMap<String, String> confMap = new HashMap<String, String>();
 	
-	
-	
 	private static final long serialVersionUID = 1L;
-	private static String testString;
 	
-	
-	
-  	// read DNS files for cluster nodes in constructor
-	// read
-	
-
 	public Configuration() {
-		
 		// Read and store public DNSs for further communication between EC2 instances
 		serverIPaddrMap = new HashMap<Integer, String>();
 		try {
-			// TODO change to add server DNSs from file such that server number is stored against the DNS
 			addIPaddrsFromPublicDnsFile();
 			System.out.println("Read public DNS file");
-			testString = "read";
 		} catch (IOException e) {
 			System.err.println("Unable to read file " + Constants.PUBLIC_DNS_FILE);
 			e.printStackTrace();
 		}
-		
-		
-		
-		
-		
 	}
-	
-	
 	
 	/**
 	 * Constructor helper to read IPs of all servers into Map
 	 * @throws IOException 
 	 * */
 	private void addIPaddrsFromPublicDnsFile() throws IOException {
-		// TODO : store MASTER_SERVER_IP_KEY = 9999
 		
 		BufferedReader br = new BufferedReader(new FileReader(Constants.PUBLIC_DNS_FILE));
 		String line;
@@ -65,25 +45,23 @@ public class Configuration implements Serializable{
 					serverIPaddrMap.get(serverIPaddrMap.size() - 1));
 
 		serverIPaddrMap.remove(serverIPaddrMap.size() - 1);
-		
 	}
-
 	
-	
-	
+	/**
+	 * Set a custom key value pair in the confMap
+	 * */
 	public void set(String key, String value){
 		confMap.put(key, value);
 	}
 	
+	/**
+	 * Get a custom stored key value pair from the confMap
+	 * */
 	public String get(String key){
 		return confMap.get(key);
 	}
-	
-	
-	
 
 	// GETTER SETTERS
-
 	public HashMap<Integer, String> getServerIPaddrMap() {
 		return serverIPaddrMap;
 	}
@@ -95,7 +73,6 @@ public class Configuration implements Serializable{
 	@Override
 	public String toString() {
 		return "serverIPaddrMap: " + serverIPaddrMap + "\n" 
-				+ "confMap: " + confMap + "\n" + "test " + testString;
+				+ "confMap: " + confMap + "\n";
 	}
-	
 }

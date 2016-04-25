@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.Serializable;
 
 public interface Writable extends Serializable {
-
 	
 	public void readFields(DataInput arg0) throws IOException;
 	

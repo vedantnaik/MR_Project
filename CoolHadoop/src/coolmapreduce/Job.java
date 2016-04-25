@@ -72,8 +72,6 @@ public class Job implements Serializable {
 		return new Job(_conf);
 	}
 
-	// private Job ref = new Job();
-
 	public String getJobName() {
 		return jobName;
 	}
@@ -164,9 +162,6 @@ public class Job implements Serializable {
 	 */
 
 	public boolean waitForCompletion(boolean verbose) throws IOException {
-		// TODO:
-		// write "this" object to file (jobfile_jobname)
-		// Tried in test program, works
 
 		String inputSplit[] = splitBucketNameAndFolder(getConf().get(
 				Constants.CTX_INPUT_PATH_KEY));
@@ -193,13 +188,8 @@ public class Job implements Serializable {
 		serializeThisAsFilename(this, jobFilename);
 		moveToSlaves(jobFilename);
 
-		// TODO: make folder here
-		// "~/Project/output/<JOBNAME>/MasterMKMs/"
-		
-		// TODO: Master by default is local, specify false if on Server
 		Master master = new Master(getConf(), false);
 
-		// TODO: Split the path's and startJob should return boolean
 		master.startJob(this, inputSplit[Constants.BUCKET_INT],
 				outputSplit[Constants.BUCKET_INT],
 				inputSplit[Constants.OBJECT_INT],
@@ -284,5 +274,4 @@ public class Job implements Serializable {
 		}
 
 	}
-
 }

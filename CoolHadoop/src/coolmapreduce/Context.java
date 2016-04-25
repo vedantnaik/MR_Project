@@ -9,21 +9,6 @@ import utils.Constants;
 
 public class Context {
 	
-	/**
-	 * TODO:
-	 * if we want super.setup and
-	 * super.cleanup we'll need to either stub them 
-	 * and set the context there, else pass from Job
-	 * to context(in MapperHandler) and then call 
-	 * super.setup to set it there.
-	 * 
-	 *  OR
-	 *  
-	 *  stub them and not implement since, its 
-	 *  not required to implement  
-	 */
-	
-	
 	/***********************************************************
 	 * MKM mapper key maps
 	 ***********************************************************
@@ -37,10 +22,7 @@ public class Context {
 	 *	-	Since we will need the actual value of the key to make the reduce call
 	 *	we are going to maintain all the key.hashcodes : key.actualvalue in a map
 	 *	called the MapperKeysMap (MKMs)
-	 *
-	 * 
 	 * */
-	
 	
 	private Job currentJob;		// MR Job for which this class is instantiated
 	private String writePhase;	// The phase in which this class is instantiated
@@ -49,7 +31,6 @@ public class Context {
 	private int localServerNumber;
 	
 	private HashMap<String, Object> mapperKeysMap;
-	
 	
 	public Context(Job _currentJob, String _writePhase, int _localServerNumber){
 		this.currentJob = _currentJob;
@@ -83,6 +64,8 @@ public class Context {
 	 * in RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE = "./output/<JOBNAME>/mapper/<KEY>/values<SERVERNUMBER>.txt";
 	 * 
 	 * Before replace the key with a hashcode of that key. Maintian the Hashcode in the mapperKeyMap
+	 * 
+	 * Replace the "-" sign in a key with "M" to let UNIX create folders named as keys
 	 * */
 	private void writeToMapperOutput(Text keyToWrite, Object valueToWrite) {
 		
@@ -90,7 +73,6 @@ public class Context {
 		strKeyHashCode = strKeyHashCode.replace('-', 'M');
 
 		this.mapperKeysMap.put(strKeyHashCode, keyToWrite.toString());
-//		System.out.println("putting " + mapperKeysMap);
 		FileSys.writeMapperValueToKeyFolder(strKeyHashCode, valueToWrite, this.currentJob.getJobName(), this.localServerNumber);
 	}
 
@@ -120,7 +102,6 @@ public class Context {
 	public void setMapperKeysMap(HashMap<String, Object> mapperKeysMap) {
 		this.mapperKeysMap = mapperKeysMap;
 	}
-	
 	
 	public Configuration getConfiguration(){
 		return this.currentJob.getConf();

@@ -52,27 +52,11 @@ import coolmapreduce.MapperHandler;
 
 public class FileSys {
 	
-	
 	/********************************************************************************************
 	 * 
 	 * FileSys is intended to be used as a util class without instantiating
 	 * 
 	 * ******************************************************************************************/
-
-	
-	public static void writeObjectToFile(Object objectToWrite, String relativeFilePathStr){
-		try {
-			ObjectOutputStream oos =  new ObjectOutputStream(new FileOutputStream(new File(relativeFilePathStr)));
-			oos.writeObject(objectToWrite);
-			oos.flush();
-			oos.close();
-		} catch (IOException e) {
-			System.err.println("Unable to write object intended to be written in the " + relativeFilePathStr + " file");
-			e.printStackTrace();
-		}	
-	}
-	
-	
 	
 	/********************************************************************************************
 	 * 
@@ -156,6 +140,55 @@ public class FileSys {
 	}
 	
 	
+	/**
+	 * Given context and a folder location on output S3 bucket, move the given localFile to that location
+	 * */
+	public static void moveToFolderOnOutputBucket(Context context, String folderPath, File localFile){
+		String fileNameOnS3Bucket = folderPath + "/" + localFile.getName();
+		
+		// Move to S3 bucket
+		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+		AmazonS3 s3client = new AmazonS3Client(credentials);
+		AccessControlList acl = new AccessControlList();
+		acl.grantPermission(GroupGrantee.AllUsers, Permission.Read);
+		
+		System.out.println("Moving file to S3 bucket: " + localFile.getName() + " to S3 location " + fileNameOnS3Bucket);
+		
+		PutObjectResult result = s3client
+		.putObject(new PutObjectRequest(context.getConfiguration().get(Constants.OUTPUT_BUCKET_NAME), 
+										fileNameOnS3Bucket, 
+										localFile).withAccessControlList(acl));
+		System.out.println("Result of move " + localFile 
+		+ " to output S3:\n"
+		+ result);
+	}
+	
+	
+	/**
+	 * Given context and a folder location on output S3 bucket and a file in that folder,
+	 * copy the file to local disk
+	 * */
+	public static InputStream getInputStreamForFileFromBucket(Context context, String folderPath, File fileToCopy){
+				
+		ArrayList<String> dataRecordList = new ArrayList<String>();
+		try {
+			AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+			AmazonS3 s3client = new AmazonS3Client(credentials);
+			System.out.println("getting outputbucket" + context.getConfiguration().get(Constants.OUTPUT_BUCKET_NAME) );
+			System.out.println("reading " + folderPath + " filetoCopy " + fileToCopy);
+			S3Object s3object = s3client
+					.getObject(new GetObjectRequest(context.getConfiguration().get(Constants.OUTPUT_BUCKET_NAME), 
+							folderPath + "/" + fileToCopy));
+			
+			return new ObjectInputStream(s3object.getObjectContent());
+			
+		} catch (IOException e) {
+			System.out.println("Unable to read file from Input S3 Bucket");
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
 	/********************************************************************************************
 	 * 
 	 * FILE OPERATIONS BETWEEN TWO EC2 INSTANCES
@@ -174,21 +207,12 @@ public class FileSys {
 	 * @throws SocketException 
 	 * @throws InterruptedException 
 	 * */
-	// NOTE: Changing from mapkey from String to int
 	public static void moveMapperTempFilesToRemoteReducers(int localServerNumber, String mapKey, int foreignServerNumber, Job currentJob) throws SocketException, IOException, JSchException, SftpException{
 		
-		
-		// TODO: TEST CREATING FOLDERS ON REMOTE SERVERS
-		
-		// check if destination folder exists
 		String destFolderStr = Constants.ABS_REDUCER_INPUT_FOLDER
 										.replace("<JOBNAME>", currentJob.getJobName())
 										.replace("<KEY>", mapKey.toString());
-		// TODO: verify commenting
-//		makeForeignFolderIfNotExist(destFolderStr, foreignServerNumber, currentJob);
 		
-		
-		// copy file
 		String srcFilePath = Constants.RELATIVE_MAPPER_CONTEXT_OUTPUT_FILE
 										.replace("<JOBNAME>", currentJob.getJobName())
 										.replace("<KEY>", mapKey.toString())
@@ -206,11 +230,8 @@ public class FileSys {
 		if (new File(srcFilePath).exists()) {
 			scpCopy(srcFilePath, destFilePath, destDns);
 		}else{
-			// noop
 			System.out.println("This file doesn't exists");
 		}
-		
-		
 	}
 	
 	
@@ -219,10 +240,13 @@ public class FileSys {
 	 * 			destination file path
 	 * 			destination EC2 instance's IP
 	 * Copies source file to destination on other server
+	 * 
+	 * Waits and retries if channel does not open OR if unable to put file on channel
+	 * 
 	 * @throws JSchException 
 	 * @throws InterruptedException 
+	 * Reference : http://unix.stackexchange.com/questions/136165/java-code-to-copy-files-from-one-linux-machine-to-another-linux-machine
 	 * */
-	// Reference : http://unix.stackexchange.com/questions/136165/java-code-to-copy-files-from-one-linux-machine-to-another-linux-machine
 	public static void scpCopy(String fsrc, String fdest, String destIP) throws SocketException, JSchException{
 		JSch jsch = new JSch();
 		jsch.addIdentity(Constants.PEM_FILE_PATH);
@@ -231,7 +255,6 @@ public class FileSys {
 		session = jsch.getSession(Constants.EC2_USERNAME, destIP);
 		
 		session.setPassword("");
-		// tem, revert if not working
 		session.setConfig("UserKnownHostsFile", "/dev/null");
 		session.setConfig("StrictHostKeyChecking", "no");
 	    session.connect();
@@ -248,20 +271,15 @@ public class FileSys {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					System.out.println("Unable to put thread on sleep");
 				}
 				continue;				
 			}
 	    	channeldone = true;
 			System.out.println("waiting for channel open " + channeldone);
-	    	
 	    }
 
 		
-//		File localFile = new File(fsrc);
-//		System.out.println("local file to copy name : " + fsrc + " localFileName " + localFile.getName());
-//		channel.put("sampleSortPartTemp/"+localFile.getName() , "Project/sampleSortMyParts/"+localFile.getName());
 		boolean done = false;
 		while(!done){
 			try{
@@ -271,52 +289,18 @@ public class FileSys {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					System.out.println("Unable to put thread on sleep");
 				}
 				continue;				
 			}
 			done = true;
 			System.out.println("waitfaing " + done);
 		}
-//		try{
-//		channel.put(fsrc, fdest);
-//		}finally{
-//			
-//		while (!channel.isClosed()) {
-//			System.out.println("waiting for isclosed ");
-//			System.out.println("checking exit status "
-//					+ channel.getExitStatus());
-//			if (channel.getExitStatus() == -1) {				
-//				channel.disconnect();
-//				session.disconnect();
-//				break;
-//			}
-//
-//			try {
-//				Thread.sleep(1000);
-//			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
-//				System.out.println("sleep failed");
-//				e.printStackTrace();
-//			}
-//		}
-		
-		
-//		}
-	    
 		
 		channel.disconnect();
 		session.disconnect();
 		jsch = null;
-		
 	}
-	
-	
-	
-	
-	
-	
 	
 	
 	/********************************************************************************************
@@ -324,6 +308,21 @@ public class FileSys {
 	 * 	LOCAL FILE OPERATIONS:
 	 * 
 	 * ******************************************************************************************/
+	
+	/**
+	 * Write given object to a local file
+	 * */
+	public static void writeObjectToFile(Object objectToWrite, String relativeFilePathStr){
+		try {
+			ObjectOutputStream oos =  new ObjectOutputStream(new FileOutputStream(new File(relativeFilePathStr)));
+			oos.writeObject(objectToWrite);
+			oos.flush();
+			oos.close();
+		} catch (IOException e) {
+			System.err.println("Unable to write object intended to be written in the " + relativeFilePathStr + " file");
+			e.printStackTrace();
+		}	
+	}
 	
 	/**
 	 * Write local file
@@ -341,11 +340,8 @@ public class FileSys {
 		String valuesFileName = "/values"+localServerNumber+".txt";
 		File folderToWriteIn = new File(fileNameToWriteIn.replace(valuesFileName, ""));
 		
-//		System.out.println("\tfileNameToWriteIn " + fileNameToWriteIn + " with " + folderToWriteIn);
-		
 		if(!folderToWriteIn.isDirectory()){
 			folderToWriteIn.mkdir();
-//			System.out.println("\tMaking new Dir for Key " + keyHashCode);
 			try {
 				ObjectOutputStream oos = getOOS(new File(fileNameToWriteIn));
 		        oos.writeObject(value);
@@ -356,7 +352,6 @@ public class FileSys {
 				e.printStackTrace();
 			}
 		} else {
-			// Folder exists. Key previously seen on this EC2
 			try {
 				ObjectOutputStream oos = getOOS(new File(fileNameToWriteIn));
 		        oos.writeObject(value);
@@ -380,7 +375,6 @@ public class FileSys {
 	 * @return
 	 * An iterator to traverse that file
 	 * @throws IOException 
-	 * 
 	 * */
 	public static Iterable<Object> readMapperOutputForKey(Text key, String jobName, int localServerNumber) throws IOException{
 		
@@ -391,13 +385,10 @@ public class FileSys {
 		FileReaderIterator iter = new FileReaderIterator(new File(fileToRead));
 
 		return iter;
-
 	}	
 	
 	
 	/**
-	 * reducerInputFilesCombiner
-	 * 
 	 * combine all 
 	 *  RELATIVE_REDUCER_INPUT_FILE = "./input/<JOBNAME>/reducer/<KEY>/values<SERVERNUMBER>.txt"
 	 * to 
@@ -405,8 +396,6 @@ public class FileSys {
 	 *  
 	 * deletes reducer input files
 	 * @throws IOException 
-	 * 
-	 * 
 	 * */
 	
 	public static void combineReducerInputFiles(Text key, String jobName, int localServerNumber) throws IOException{
@@ -425,13 +414,11 @@ public class FileSys {
 		ObjectOutputStream finalOOS = null;
 		for (File valuesFile : reducerInputFolder.listFiles()){
 			FileReaderIterator<Object> valuesIter = new FileReaderIterator<Object>(valuesFile); 
-//			System.out.println("Merging " + valuesFile);
 			for(Object valueObject : valuesIter){
 				finalOOS = getOOS(finalValuesFile);
 				finalOOS.writeObject(valueObject);
 
 				if(null != finalOOS){
-//					System.out.println("cloosing finaloos " + valueObject);
 					finalOOS.close();
 				}
 			}
@@ -448,7 +435,6 @@ public class FileSys {
 	 * currentJob			: 		current Job object
 	 * 
 	 * */
-	// NOTE: Changing mapkey from string to int
 	public static void moveMapperTempFilesToLocalReducer(String mapKey, int localServerNumber, Job currentJob){
 	
 		String jobName = currentJob.getJobName();
@@ -474,11 +460,8 @@ public class FileSys {
 		
 		java.nio.file.Path src = java.nio.file.Paths.get(srcFileStr);
 		
-
 		if(new File(srcFileStr).exists()){
-			
 			java.nio.file.Path dest = java.nio.file.Paths.get(destFileStr);
-			
 			
 			try {
 				java.nio.file.Files.move(src, dest, REPLACE_EXISTING);
@@ -486,14 +469,8 @@ public class FileSys {
 				System.err.println("UNABLE TO SHUFFLE FILE LOCALLY FOR KEY " + mapKey + " in ServerNumber " + localServerNumber);
 				e.printStackTrace();
 			}
-
-		}else{
-			// noop
 		}		
-		
 	}
-	
-
 	
 	/**
 	 * On every EC2 instance, when in reducer phase, the context.write() writes a pair of
@@ -505,7 +482,6 @@ public class FileSys {
 		
 		String fileToWriteInStr = Constants.RELATIVE_REDUCER_OUTPUT_FILE
 										.replace("<JOBNAME>", currentJobName);
-//										.replace("<SERVERNUMBER>", currentServerNumber+"");
 		
 		String tabSeparatedLineToWrite = key.toString() + "\t" + value.toString() + "\n";
 		
@@ -513,14 +489,12 @@ public class FileSys {
 		try {
 			
 			// create folder
-			
 			//make output folder
 			String outputFolderName = Constants.RELATIVE_REDUCER_OUTPUT_FOLDER.replace("<JOBNAME>", currentJobName);
 			System.out.println("create output job Folder " + outputFolderName);
 			File outputFolderFileObj = new File(outputFolderName);
 			outputFolderFileObj.mkdir();
 
-			
 			System.out.println("create file on server " + fileToWriteInStr);
 			// create empty file for part-0000X
 			
@@ -575,7 +549,6 @@ public class FileSys {
 		File localFileToMove = new File(localFileToMoveStr);
 		System.out.println("Moving reducer output part file from server : " + localServerNumber);
 
-			
 		if (new File(localFileToMoveStr).exists()) {
 			
 			PutObjectResult result = s3client.putObject(new PutObjectRequest(
@@ -589,66 +562,6 @@ public class FileSys {
 		}
 	}
 	
-	
-	/**
-	 * Given context and a folder location on output S3 bucket, move the given localFile to that location
-	 * */
-	public static void moveToFolderOnOutputBucket(Context context, String folderPath, File localFile){
-		
-
-		// Rename
-		String fileNameOnS3Bucket = folderPath + "/" + localFile.getName();
-		
-		// Move to S3 bucket
-		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
-		AmazonS3 s3client = new AmazonS3Client(credentials);
-		AccessControlList acl = new AccessControlList();
-		acl.grantPermission(GroupGrantee.AllUsers, Permission.Read);
-		
-		System.out.println("Moving file to S3 bucket: " + localFile.getName() + " to S3 location " + fileNameOnS3Bucket);
-		
-		PutObjectResult result = s3client
-		.putObject(new PutObjectRequest(context.getConfiguration().get(Constants.OUTPUT_BUCKET_NAME), 
-										fileNameOnS3Bucket, 
-										localFile).withAccessControlList(acl));
-		System.out.println("Result of move " + localFile 
-		+ " to output S3:\n"
-		+ result);
-		
-		// delete local copy
-//		localFileToMove.delete();
-		
-	}
-	
-	
-	/**
-	 * Given context and a folder location on output S3 bucket and a file in that folder,
-	 * copy the file to local disk
-	 * */
-	public static InputStream getInputStreamForFileFromBucket(Context context, String folderPath, File fileToCopy){
-				
-		ArrayList<String> dataRecordList = new ArrayList<String>();
-		try {
-			AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
-			AmazonS3 s3client = new AmazonS3Client(credentials);
-			System.out.println("getting outputbucket" + context.getConfiguration().get(Constants.OUTPUT_BUCKET_NAME) );
-			System.out.println("reading " + folderPath + " filetoCopy " + fileToCopy);
-			S3Object s3object = s3client
-					.getObject(new GetObjectRequest(context.getConfiguration().get(Constants.OUTPUT_BUCKET_NAME), 
-							folderPath + "/" + fileToCopy));
-			
-			
-			
-			return new ObjectInputStream(s3object.getObjectContent());
-			
-		} catch (IOException e) {
-			System.out.println("Unable to read file from Input S3 Bucket");
-			e.printStackTrace();
-		}
-		
-		return null;
-	}
-	
 	///////////////////////////////
 	// HELPERS
 	///////////////////////////////
@@ -658,7 +571,6 @@ public class FileSys {
 	 * 
 	 * http://stackoverflow.com/questions/2094637/how-can-i-append-to-an-existing-java-io-objectstream
 	 * */
-	
 	private static ObjectOutputStream getOOS(File storageFile) throws IOException {
 		if (storageFile.exists()) {
 		    // this is a workaround so that we can append objects to an existing file
@@ -685,7 +597,6 @@ public class FileSys {
 	 * 
 	 * http://stackoverflow.com/questions/2094637/how-can-i-append-to-an-existing-java-io-objectstream
 	 * */
-	
 	public static ObjectInputStream getOIS(FileInputStream fis)
             throws IOException {
 		long pos = fis.getChannel().position();
@@ -796,7 +707,5 @@ public class FileSys {
 		System.out.println("create masterMKMs Folder " + masterMKMfolder);
 		File masterMKMfolderObj = new File(masterMKMfolder);
 		masterMKMfolderObj.mkdir();
-		
 	}
 }
-

@@ -34,9 +34,7 @@ public class FileReaderIterator<T> implements Iterable<T>, Iterator<T>{
 
 	@Override
 	public T next() {
-		// TODO: make copy constructor
-		// 		find a better approach
-		T objToReturn = this.cachedObj;//.toString();
+		T objToReturn = this.cachedObj;
 		this.cachedObj = null;
 		return objToReturn;
 	}
@@ -46,11 +44,9 @@ public class FileReaderIterator<T> implements Iterable<T>, Iterator<T>{
 
 	@Override
 	public Iterator<T> iterator() {
-//		FileInputStream fileStream;
 		try {
 			return new FileReaderIterator<T>(this.fileToRead);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
 		}
@@ -59,12 +55,8 @@ public class FileReaderIterator<T> implements Iterable<T>, Iterator<T>{
 	public void close() {
 		try {
 			this.ois.close();
-//			System.out.println("closing ois");
 		} catch (IOException e) {
 			System.out.println("OIS already closed");			
 		}		
 	}
-
-
-	
 }

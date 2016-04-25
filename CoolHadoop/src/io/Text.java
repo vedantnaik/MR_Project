@@ -6,16 +6,13 @@ import java.io.Serializable;
 
 
 public class Text implements Writable{
-	/**
-	 * 
-	 */
+
 	private static final long serialVersionUID = 1L;
 	String text;
 	
 	public Text(){
 		text = new String();
 	}
-
 	
 	public Text(String _text){
 		text = new String(_text);
@@ -27,7 +24,6 @@ public class Text implements Writable{
 	
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
 		return this.text;
 	}
 	
@@ -40,24 +36,13 @@ public class Text implements Writable{
 		return text.hashCode();
 	}
 
-
 	@Override
 	public void readFields(DataInput arg0) throws IOException {
-		// TODO Auto-generated method stub
-		
 	}
 
 
 	@Override
 	public void write(DataOutput arg0) throws IOException {
-		// TODO Auto-generated method stub
-		
 	}
-	
-//	@Override
-//	public boolean equals(Object obj) {
-//		// TODO Auto-generated method stub
-//		return text.equals((Text) obj);
-//	}
-	
+		
 }

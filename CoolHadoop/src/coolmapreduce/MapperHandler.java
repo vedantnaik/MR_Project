@@ -23,17 +23,14 @@ import com.jcraft.jsch.SftpException;
 public class MapperHandler {
 
 	/**
-	 * TODO: MapperHandler Requirement
+	 * MapperHandler Requirement
 	 * 
-	 * 1. We need Job's information 2. For that Job, get the Mapper InputPath
-	 * Context
-	 * 
+	 * 1. We need Job's information 
+	 * 2. For that Job, get the Mapper InputPath Context
 	 * 3. For each file - Read [see format, based on that reader to get each
-	 * line] - For each line, call map on Mapper implementation Send context
+	 * line] - For each line, call map on Mapper implementation. Send context
 	 * along
-	 * 
 	 * 4. Notify main class after all lines from all files are read.
-	 * 
 	 * */
 	
 	
@@ -65,14 +62,12 @@ public class MapperHandler {
 	Class<?> valueOutClass = Text.class;
 	Class<?> contextClass = Context.class;
 
-	// TODO: set this value
 	int localServerNumber;
 
 	// get context from job for now class variable
 	Context contextVariable = null;
 
-	// Assumes each MapperHandler has a list of files to work
-	// on
+	// Assumes each MapperHandler has a list of files to work on
 	public MapperHandler(List<String> _files, Job _job) {
 		listOfMapperFiles = _files;
 		currentJob = _job;
@@ -137,13 +132,15 @@ public class MapperHandler {
 
 		// MKM processing after cleanup
 		writeMapperKeysMapToFile();
-
 		moveMapperKeyMapFileToMainServer();
 		
 		phase = Constants.MAP_FINISH;
 
 	}
 
+	/**
+	 * Given an input file, read all lines and invoke map function for each
+	 * */
 	public void mapperHandlerRun(String file) throws Exception {
 		System.out.println("Invoking map function");
 		Method map;
@@ -220,7 +217,6 @@ public class MapperHandler {
 							
 	 */
 	private void make_folders_cleanup_files() {
-		// TODO Auto-generated method stub
 		
 		File fileDelete = new File("");
 		fileDelete.delete();
@@ -253,7 +249,6 @@ public class MapperHandler {
 			
 			
 			// create MKM folder
-			
 			String mkmFolderName = Constants.ABSOLUTE_MASTER_MKM_PATH_FOLDER.replace("<JOBNAME>", currentJob.getJobName());
 			System.out.println("creating mkm folder " + mkmFolderName);
 			File mkmFolder = new File(mkmFolderName);
@@ -274,6 +269,9 @@ public class MapperHandler {
 
 	}
 
+	/**
+	 * Invokes the setup method. If not overridden, the invoked method does noop
+	 * */
 	public void mapperHandlerSetup() throws Exception {
 		// setup phase
 		try {
@@ -289,13 +287,14 @@ public class MapperHandler {
 
 		} catch (Exception e) {
 			System.out.println("exception in init of setup");
-//			e.printStackTrace();
-//			throw e;
 			System.out.println("No setup found for Mapper");
 		}
 
 	}
 
+	/**
+	 * Invokes the cleanup method. If not overridden, the invoked method does noop
+	 * */
 	public void mapperHandlerCleanup() throws Exception {
 		try {
 			System.out.println("\tCalling cleanup::Mapper "
@@ -311,8 +310,6 @@ public class MapperHandler {
 		} catch (Exception e) {
 
 			System.out.println("exception in init of cleaup");
-//			e.printStackTrace();
-//			throw e;
 			System.out.println("No cleanup found for Mapper");
 		}
 	}
@@ -368,7 +365,6 @@ public class MapperHandler {
 			System.out.println("scp from " + fsrcStr + " deststr " + fdestStr);
 			FileSys.scpCopy(fsrcStr, fdestStr, destIP);
 			
-			// TODO Delete local copy
 		} catch (SocketException e) {
 			System.err.println("Socket error while trying to send MKM object file to master server from server " + localServerNumber);
 			e.printStackTrace();
@@ -378,10 +374,7 @@ public class MapperHandler {
 		} catch (JSchException e) {
 			System.err.println("JSch Exception while trying to move MKM file from server " + localServerNumber);
 			e.printStackTrace();
-		} /*catch (SftpException e) {
-			System.err.println("Sftp Exception while trying to move MKM file from server " + localServerNumber);
-			e.printStackTrace();
-		}*/
+		} 
 	}
 	
 	

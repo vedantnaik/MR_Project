@@ -7,14 +7,9 @@ import java.io.Serializable;
 
 public class IntWritable implements Writable  {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	
-	
 	int value;
-	
 	
 	public IntWritable(){
 		value = 0;
@@ -23,7 +18,6 @@ public class IntWritable implements Writable  {
 	public IntWritable(int _val){
 		value = _val;
 	}
-
 	
 	public int get(){
 		return this.value;
@@ -35,7 +29,6 @@ public class IntWritable implements Writable  {
 	
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
 		return value+"";
 	}
 	
@@ -46,13 +39,9 @@ public class IntWritable implements Writable  {
 
 	@Override
 	public void readFields(DataInput arg0) throws IOException {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void write(DataOutput arg0) throws IOException {
-		// TODO Auto-generated method stub
-		
 	}
 }

@@ -26,7 +26,6 @@ import fs.shuffler.LoadDistributor;
  * Server program which listens on the port 1210 or local-port 
  * as defined by the program. It has the capability to listen and
  * execute commands as per Master. 
- * 
  */
 public class Server implements Runnable {
 	private Socket connection = null;
@@ -57,7 +56,6 @@ public class Server implements Runnable {
 	private static boolean localServersFlag = false; 
 	private static boolean receivingMapFiles = false;
 
-	//
 	private static Map<String, Object> masterKeyServerMap;
 	
 	/**
@@ -343,7 +341,6 @@ public class Server implements Runnable {
 	 * @throws InterruptedException 
 	 */
 	private void start_shuffle_and_sort() throws IOException {
-		// TODO: Call functions
 		// read the master MKM and send the files to the reducer 
 		// for corresponding server#
 		masterKeyServerMap = null;
@@ -375,7 +372,6 @@ public class Server implements Runnable {
 	 * @throws IOException
 	 */
 	private void start_reduce_phase() throws IOException {
-		// TODO: Call reduceHandler
 		
 		HashMap<String, Object> masterMKMs = null;
 		try {
@@ -391,9 +387,6 @@ public class Server implements Runnable {
 			System.err.println("Could not cast MKM to an object of hashmap");
 			e1.printStackTrace();
 		}
-
-		
-		
 		
 		// 1. merge the values from different servers for each key, to values.txt
 		FileSys.mergeValuesForAllKeysForJob(job, serverNumber, masterMKMs, masterKeyServerMap);
@@ -407,7 +400,6 @@ public class Server implements Runnable {
 			System.err.println("Error in run reducer handler from server "+serverNumber);
 			e.printStackTrace();
 		}
-		
 		
 		outClient.writeBytes(
 				Constants.REDUCEFINISH + "#" + serverNumber + "\n");
