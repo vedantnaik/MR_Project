@@ -11,11 +11,14 @@ echo $jarname
 serverjarname="CoolHadoop-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
 serverarg=\"$serverjarname:$jarname\"
 
+FILE=publicDnsFile.txt
 
+filelength=`cat publicDnsFile.txt | wc -l`
+echo $filelength
+count="$((filelength-1))"
+echo $count
 echo $@
 echo $#
-
-
 # maven cleaning
 # mvn clean install
 # mvn clean compile assembly:single
@@ -58,7 +61,7 @@ server="not decided"
 while read line;do
         echo "$line"
         echo $i
-        if [ $i -eq 3 ]; then
+        if [ $i -eq $count ]; then
         	server=$line
                 `ssh -i MyKeyPair.pem ubuntu@$line -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "cd ~/Project; java -cp $serverarg $@ > log.txt 2>&1"` < /dev/null &
         else
